@@ -30,9 +30,7 @@ jobs:
         poetry_version: 1.0.9
         args: install
     - name: Run pytest
-      with:
-        python_version: ${{ matrix.python-version }}
-        run: poetry run pytest --cov=src --cov-branch --cov-fail-under=100 tests/
+      run: poetry run pytest --cov=src --cov-branch --cov-fail-under=100 tests/
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
