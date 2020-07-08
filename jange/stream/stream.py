@@ -1,3 +1,4 @@
+from typing import Any, List, Optional, Union, Iterable
 import pandas as pd
 
 
@@ -10,9 +11,9 @@ class DataStream:
     Example
     -------
     create a stream of data from a list of numbers
-    >>> ds = DataStream(applied_ops=None, items=[1, 2, 3])
+    >>> ds = DataStream(items=[1, 2, 3])
     >>> print(list(ds))
-    >>> [1, 2, 3]
+    [1, 2, 3]
 
 
     Attributes
@@ -24,9 +25,9 @@ class DataStream:
         an iterable that contains the raw data
     """
 
-    def __init__(self, applied_ops: list, items):
-        self.applied_ops = applied_ops or []
+    def __init__(self, items: Iterable[Any], applied_ops: Optional[List] = None):
         self.items = items
+        self.applied_ops = applied_ops or []
 
     def __iter__(self):
         for i in self.items:
@@ -48,10 +49,10 @@ class DataFrameStream(DataStream):
     >>> df = pd.DataFrame([{"text": "text 1", "id": "1"}, {"text": "text 2", "id": "2"}])
     >>> ds = DataFrameStream(df=df, columns="text")
     >>> print(list(ds))
-    >>> ["text 1", "text 2"]
+    ["text 1", "text 2"]
     >>> ds = DataFrameStream(df=df, columns=["id", "text"])
     >>> print(list(ds))
-    >>> [["1", "text 1"], ["2", "text 2"]]
+    [["1", "text 1"], ["2", "text 2"]]
 
     Attributes
     ----------
@@ -62,13 +63,12 @@ class DataFrameStream(DataStream):
         is used to select data from those columns only
     """
 
-    def __init__(self, df, columns: list) -> None:
-        super().__init__(applied_ops=None, items=None)
-        self.df = df
+    def __init__(self, df, columns: Union[str, List[str]]) -> None:
+        super().__init__(applied_ops=None, items=df)
         self.columns = columns
 
     def __iter__(self):
-        for i, row in self.df.iterrows():
+        for i, row in self.items.iterrows():
             if isinstance(self.columns, list):
                 yield [row[c] for c in self.columns]
             else:
@@ -94,6 +94,6 @@ class CSVDataStream(DataFrameStream):
         path to the csv file
     """
 
-    def __init__(self, path: str, columns: list):
+    def __init__(self, path: str, columns: Union[str, List[str]]):
         super().__init__(pd.read_csv(path), columns=columns)
         self.path = path
