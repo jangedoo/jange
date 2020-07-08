@@ -1,1 +1,1 @@
-from .stream import DataStream, CSVDataStream, DataFrameStream
+from .stream import DataStream, CSVDataStream, DataFrameStream  # noqa
