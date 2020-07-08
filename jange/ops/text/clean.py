@@ -61,6 +61,36 @@ def uppercase() -> CaseChangeOperation:
 
 
 class ConvertToSpacyDocOperation(Operation):
+    """Convert a stream of texts to stream of spacy's `Doc`s.
+    Once spacy processes a text, it creates an instance of `Doc`
+    which contains a lot of information like part of speech, named
+    entities and many others. It is usually better to convert texts
+    to spacy's Doc and perform operations on them. For example, spacy
+    has powerful pattern matching features which can be used.
+
+    Any operation that expects a `nlp` object can benefit if you pass
+    a stream of spacy `Doc`s instead of stream of strings. Otherwise those
+    operations will independently convert the raw texts into spacy `Doc`
+    everytime you call them!
+
+    Example
+    -------
+    >>> ds = DataStream(["this is text 1", "this is text 2"])
+    >>> op = ConvertToSpacyDocOperation(nlp=nlp)
+    >>> ds.apply(op)
+
+    Parameters
+    ----------
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    Attributes
+    ---------
+    nlp : spacy.language.Language
+        spacy's language model
+    """
+
     def __init__(self, nlp: Optional[Language] = None) -> None:
         self.nlp = nlp or spacy.load("en_core_web_sm")
 
@@ -70,6 +100,8 @@ class ConvertToSpacyDocOperation(Operation):
 
 
 def convert_to_spacy_doc(nlp: Optional[Language] = None) -> ConvertToSpacyDocOperation:
+    """Helper function to return ConvertToSpacyDocOperation
+    """
     return ConvertToSpacyDocOperation(nlp=nlp)
 
 
