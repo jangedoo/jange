@@ -25,7 +25,9 @@ class DataStream:
         an iterable that contains the raw data
     """
 
-    def __init__(self, items: Iterable[Any], applied_ops: Optional[List] = None):
+    def __init__(
+        self, items: Iterable[Any], applied_ops: Optional[List] = None,
+    ):
         self.items = items
         self.applied_ops = applied_ops or []
 
