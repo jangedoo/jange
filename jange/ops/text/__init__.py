@@ -7,3 +7,5 @@ from .clean import (
     ConvertToSpacyDocOperation,
     convert_to_spacy_doc,
 )
+from .vectors import TfIdfOperation, tfidf
+
