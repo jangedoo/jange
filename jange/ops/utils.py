@@ -25,16 +25,17 @@ def disable_training(ops: List[Operation]) -> List[Operation]:
         a list of operations
     """
     original_mode = {}
-    for i, op in enumerate(ops):
-        if isinstance(op, TrainableMixin):
-            original_mode[i] = op.should_train
-            op.should_train = False
+    try:
+        for i, op in enumerate(ops):
+            if isinstance(op, TrainableMixin):
+                original_mode[i] = op.should_train
+                op.should_train = False
 
-    yield ops
-
-    for i, op in enumerate(ops):
-        if isinstance(op, TrainableMixin):
-            op.should_train = original_mode[i]
+        yield ops
+    finally:
+        for i, op in enumerate(ops):
+            if isinstance(op, TrainableMixin):
+                op.should_train = original_mode[i]
 
 
 def save(ops: List[Operation], path: str, replace: bool = False):
