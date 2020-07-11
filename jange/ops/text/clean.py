@@ -1,12 +1,12 @@
-from typing import Optional
+from typing import Optional, List, Dict, Tuple
 
-import cytoolz
 import spacy
 from spacy.tokens import Doc
 from spacy.language import Language
+from spacy.matcher import Matcher, PhraseMatcher
 
 from jange.stream import DataStream
-from ..base import Operation
+from ..base import Operation, SpacyUserMixin
 
 
 class CaseChangeOperation(Operation):
@@ -60,7 +60,7 @@ def uppercase() -> CaseChangeOperation:
     return CaseChangeOperation(mode="upper")
 
 
-class ConvertToSpacyDocOperation(Operation):
+class ConvertToSpacyDocOperation(Operation, SpacyUserMixin):
     """Convert a stream of texts to stream of spacy's `Doc`s.
     Once spacy processes a text, it creates an instance of `Doc`
     which contains a lot of information like part of speech, named
@@ -95,7 +95,7 @@ class ConvertToSpacyDocOperation(Operation):
         self.nlp = nlp or spacy.load("en_core_web_sm")
 
     def run(self, ds: DataStream) -> DataStream:
-        docs = self.nlp.pipe(ds)
+        docs = self.get_docs(ds)
         return DataStream(docs, applied_ops=ds.applied_ops + [self])
 
 
@@ -105,7 +105,7 @@ def convert_to_spacy_doc(nlp: Optional[Language] = None) -> ConvertToSpacyDocOpe
     return ConvertToSpacyDocOperation(nlp=nlp)
 
 
-class LemmatizeOperation(Operation):
+class LemmatizeOperation(Operation, SpacyUserMixin):
     """Perform lemmatization using spacy's language model
 
     Example
@@ -132,14 +132,12 @@ class LemmatizeOperation(Operation):
         self.nlp: Language = nlp or spacy.load("en_core_web_sm")
 
     def _get_lemmatized_doc(self, doc):
-        return " ".join(t.lemma_ for t in doc)
+        lemma_tokens = [t.lemma_ for t in doc]
+        spaces = [t.whitespace_ == " " for t in doc]
+        return Doc(self.nlp.vocab, words=lemma_tokens, spaces=spaces)
 
     def run(self, ds: DataStream):
-        first, items = cytoolz.peek(ds)
-        if not isinstance(first, Doc):
-            docs = self.nlp.pipe(items)
-        else:
-            docs = items
+        docs = self.get_docs(ds)
         items = map(self._get_lemmatized_doc, docs)
         return DataStream(applied_ops=ds.applied_ops + [self], items=items)
 
@@ -151,4 +149,78 @@ def lemmatize(nlp: Optional[Language] = None) -> LemmatizeOperation:
     """Helper function to return LemmatizeOperation
     """
     return LemmatizeOperation(nlp)
+
+
+class TokenFilterOperation(Operation, SpacyUserMixin):
+    def __init__(
+        self,
+        patterns: List[List[Dict]],
+        nlp: Optional[Language] = None,
+        keep_matching_tokens=False,
+    ) -> None:
+        self.nlp = nlp or spacy.load("en_core_web_sm")
+        self.keep_matching_tokens = keep_matching_tokens
+        self.patterns = patterns
+        self.matcher = Matcher(vocab=self.nlp.vocab, validate=True)
+
+        for p in patterns:
+            self.matcher.add("MATCHES", None, p)
+
+    def _filter_tokens(self, matcher_output: Tuple[Doc, List[Tuple]]) -> Doc:
+        doc, matches = matcher_output
+        matching_token_ids = []
+        for _, start, end in matches:
+            for token in doc[start:end]:
+                matching_token_ids.append(token.i)
+
+        tokens_to_discard = matching_token_ids
+        if self.keep_matching_tokens:
+            tokens_to_discard = [t.i for t in doc if t.i not in matching_token_ids]
+
+        return self.discard_tokens_from_doc(doc, tokens_to_discard)
+
+    def run(self, ds: DataStream) -> DataStream:
+        docs = self.get_docs(ds)
+        match_results = self.matcher.pipe(docs, return_matches=True)
+        new_docs = map(self._filter_tokens, match_results)
+        return DataStream(new_docs, ds.applied_ops + [self])
+
+
+def token_filter(
+    patterns: List[List[Dict]], keep_matching_tokens, nlp: Optional[Language] = None
+):
+    return TokenFilterOperation(
+        patterns=patterns, nlp=nlp, keep_matching_tokens=keep_matching_tokens
+    )
+
+
+def remove_stopwords(
+    words: List[str], nlp: Optional[Language] = None
+) -> TokenFilterOperation:
+    patterns = []
+    for word in words:
+        patterns.append([{"LOWER": word.lower()}])
+    return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
+
+
+def remove_numbers(nlp: Optional[Language] = None) -> TokenFilterOperation:
+    patterns = [[{"IS_DIGIT": True}]]
+    return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
+
+
+def remove_links(nlp: Optional[Language] = None) -> TokenFilterOperation:
+    patterns = [[{"LIKE_URL": True}]]
+    return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
+
+
+def remove_emails(nlp: Optional[Language] = None) -> TokenFilterOperation:
+    patterns = [[{"LIKE_EMAIL": True}]]
+    return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
+
+
+def remove_words_with_length_less_than(
+    length: int, nlp: Optional[Language] = None
+) -> TokenFilterOperation:
+    patterns = [[{"LENGTH": {"<": length}}]]
+    return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
 

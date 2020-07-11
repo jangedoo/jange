@@ -1,7 +1,13 @@
 import pytest
 import spacy
+from spacy.tokens import Doc
 from jange.ops.text import LemmatizeOperation, lemmatize
 from jange.stream import DataStream
+
+
+@pytest.fixture(scope="module")
+def nlp():
+    return spacy.load("en_core_web_sm")
 
 
 @pytest.fixture
@@ -10,26 +16,21 @@ def texts():
 
 
 @pytest.fixture
-def lemmatized():
+def lemmatized(nlp):
     return ["orange be good", "jange library rock"]
-
-
-@pytest.fixture(scope="module")
-def nlp():
-    return spacy.load("en_core_web_sm")
 
 
 def test_lemmatizes_correctly_for_stream_of_texts(texts, lemmatized, nlp):
     ds = DataStream(texts)
     op = LemmatizeOperation(nlp=nlp)
-    assert list(ds.apply(op)) == lemmatized
+    assert list(map(lambda d: d.text, ds.apply(op))) == lemmatized
 
 
 def test_temmatizes_correctly_for_stream_of_spacy_docs(texts, lemmatized, nlp):
-    ds = DataStream(texts)
     op = LemmatizeOperation(nlp=nlp)
-    docs = nlp.pipe(ds.items)
-    assert list(DataStream(docs).apply(op)) == lemmatized
+    docs = nlp.pipe(texts)
+    ds = DataStream(docs).apply(op)
+    assert list(map(lambda d: d.text, ds)) == lemmatized
 
 
 def test_nlp_object_is_created_is_nothing_is_passed():

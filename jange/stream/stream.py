@@ -1,4 +1,5 @@
 from typing import Any, List, Optional, Union, Iterable
+import cytoolz
 import pandas as pd
 
 
@@ -34,6 +35,12 @@ class DataStream:
     def __iter__(self):
         for i in self.items:
             yield i
+
+    @property
+    def item_type(self):
+        first, items = cytoolz.peek(self.items)
+        self.items = items
+        return type(first)
 
     def apply(self, *ops):
         x = self
