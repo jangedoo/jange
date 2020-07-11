@@ -12,6 +12,7 @@ pandas = "0.24.2"
 cytoolz = "^0.10.0"
 spacy="^2.2.0"
 scikit-learn = "^0.23.1"
+jsonschema = "^3.2.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.3.4"
