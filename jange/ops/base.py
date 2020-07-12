@@ -1,4 +1,6 @@
-from typing import Iterable, List
+from typing import Iterable, List, Optional
+import spacy
+from spacy.language import Language
 from spacy.tokens import Doc
 from jange.stream import DataStream
 
@@ -16,7 +18,11 @@ class TrainableMixin:
         self.should_train = True
 
 
-class SpacyUserMixin:
+class SpacyBasedOperation(Operation):
+    def __init__(self, nlp: Optional[Language]) -> None:
+        super().__init__()
+        self.nlp = nlp or spacy.load("en_core_web_sm")
+
     def get_docs(self, ds: DataStream) -> Iterable[Doc]:
         """Returns an interable of spacy Doc from the datastream.
         If the data stream already contains spacy Docs then they

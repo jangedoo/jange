@@ -6,7 +6,7 @@ from spacy.language import Language
 from spacy.matcher import Matcher, PhraseMatcher
 
 from jange.stream import DataStream
-from ..base import Operation, SpacyUserMixin
+from ..base import Operation, SpacyBasedOperation
 
 
 class CaseChangeOperation(Operation):
@@ -60,7 +60,7 @@ def uppercase() -> CaseChangeOperation:
     return CaseChangeOperation(mode="upper")
 
 
-class ConvertToSpacyDocOperation(Operation, SpacyUserMixin):
+class ConvertToSpacyDocOperation(SpacyBasedOperation):
     """Convert a stream of texts to stream of spacy's `Doc`s.
     Once spacy processes a text, it creates an instance of `Doc`
     which contains a lot of information like part of speech, named
@@ -92,7 +92,7 @@ class ConvertToSpacyDocOperation(Operation, SpacyUserMixin):
     """
 
     def __init__(self, nlp: Optional[Language] = None) -> None:
-        self.nlp = nlp or spacy.load("en_core_web_sm")
+        super().__init__(nlp)
 
     def run(self, ds: DataStream) -> DataStream:
         docs = self.get_docs(ds)
@@ -105,7 +105,7 @@ def convert_to_spacy_doc(nlp: Optional[Language] = None) -> ConvertToSpacyDocOpe
     return ConvertToSpacyDocOperation(nlp=nlp)
 
 
-class LemmatizeOperation(Operation, SpacyUserMixin):
+class LemmatizeOperation(SpacyBasedOperation):
     """Perform lemmatization using spacy's language model
 
     Example
@@ -129,7 +129,7 @@ class LemmatizeOperation(Operation, SpacyUserMixin):
     """
 
     def __init__(self, nlp: Optional[Language]) -> None:
-        self.nlp: Language = nlp or spacy.load("en_core_web_sm")
+        super().__init__(nlp)
 
     def _get_lemmatized_doc(self, doc):
         lemma_tokens = [t.lemma_ for t in doc]
@@ -151,14 +151,14 @@ def lemmatize(nlp: Optional[Language] = None) -> LemmatizeOperation:
     return LemmatizeOperation(nlp)
 
 
-class TokenFilterOperation(Operation, SpacyUserMixin):
+class TokenFilterOperation(SpacyBasedOperation):
     def __init__(
         self,
         patterns: List[List[Dict]],
         nlp: Optional[Language] = None,
         keep_matching_tokens=False,
     ) -> None:
-        self.nlp = nlp or spacy.load("en_core_web_sm")
+        super().__init__(nlp)
         self.keep_matching_tokens = keep_matching_tokens
         self.patterns = patterns
         self.matcher = Matcher(vocab=self.nlp.vocab, validate=True)
@@ -188,7 +188,7 @@ class TokenFilterOperation(Operation, SpacyUserMixin):
 
 def token_filter(
     patterns: List[List[Dict]], keep_matching_tokens, nlp: Optional[Language] = None
-):
+) -> TokenFilterOperation:
     return TokenFilterOperation(
         patterns=patterns, nlp=nlp, keep_matching_tokens=keep_matching_tokens
     )
