@@ -9,12 +9,19 @@ class DataStream:
     basically iterates through the underlying data. The underlying data
     is stored in `items` attribute which can be any iterable object.
     
+    Parameters
+    ----------
+    items : iterable
+        an iterable that contains the raw data
+
+    applied_ops : Optional[List[Operation]]
+        a list of operations that were applied to create this stream of data    
+
     Example
     -------
-    create a stream of data from a list of numbers
     >>> ds = DataStream(items=[1, 2, 3])
     >>> print(list(ds))
-    [1, 2, 3]
+    >>> [1, 2, 3]
 
 
     Attributes
@@ -53,15 +60,26 @@ class DataFrameStream(DataStream):
     """Represents a stream of data by iterating over the rows in a
     pandas DataFrame object.
 
+    Parameters
+    ----------
+    df : pd.DataFrame
+        pandas DataFrame object
+
+    columns : Union[str, List[str]]
+        a column name or a list of column names in the dataframe. The values
+        from the given column(s) are used to create a stream. If a list is
+        passed then each item in the stream will be a list of values for the given
+        columns in that order.
+
     Example
     -------
     >>> df = pd.DataFrame([{"text": "text 1", "id": "1"}, {"text": "text 2", "id": "2"}])
     >>> ds = DataFrameStream(df=df, columns="text")
     >>> print(list(ds))
-    ["text 1", "text 2"]
+    >>> ["text 1", "text 2"]
     >>> ds = DataFrameStream(df=df, columns=["id", "text"])
     >>> print(list(ds))
-    [["1", "text 1"], ["2", "text 2"]]
+    >>> [["1", "text 1"], ["2", "text 2"]]
 
     Attributes
     ----------
@@ -87,6 +105,18 @@ class DataFrameStream(DataStream):
 class CSVDataStream(DataFrameStream):
     """Represents a stream of data by reading the contents from a csv file.
     pandas library is used to read the csv.
+
+    Parameters
+    ----------
+    path : str
+        path to the csv file to read. This parameter is passed directly to
+        `pandas.read_csv` method
+
+    columns : Union[str, List[str]]
+        a column name or a list of column names in the csv file. The values
+        from the given column(s) are used to create a stream. If a list is
+        passed then each item in the stream will be a list of values for the given
+        columns in that order.
 
     Example
     -------
