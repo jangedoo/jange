@@ -42,7 +42,7 @@ class SpacyBasedOperation(Operation):
         if ds.item_type != Doc:
             docs = self.nlp.pipe(ds)
         else:
-            docs = ds.items
+            docs = ds
 
         return docs
 

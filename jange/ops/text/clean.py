@@ -42,7 +42,9 @@ class CaseChangeOperation(Operation):
         else:
             fn = str.lower
         items = map(fn, ds)
-        return DataStream(applied_ops=ds.applied_ops + [self], items=items)
+        return DataStream(
+            applied_ops=ds.applied_ops + [self], items=items, context=ds.context
+        )
 
     def __repr__(self):
         return f"CaseChangeOperation(mode='{self.mode}')"
@@ -96,7 +98,7 @@ class ConvertToSpacyDocOperation(SpacyBasedOperation):
 
     def run(self, ds: DataStream) -> DataStream:
         docs = self.get_docs(ds)
-        return DataStream(docs, applied_ops=ds.applied_ops + [self])
+        return DataStream(docs, applied_ops=ds.applied_ops + [self], context=ds.context)
 
 
 def convert_to_spacy_doc(nlp: Optional[Language] = None) -> ConvertToSpacyDocOperation:
@@ -139,7 +141,9 @@ class LemmatizeOperation(SpacyBasedOperation):
     def run(self, ds: DataStream):
         docs = self.get_docs(ds)
         items = map(self._get_lemmatized_doc, docs)
-        return DataStream(applied_ops=ds.applied_ops + [self], items=items)
+        return DataStream(
+            applied_ops=ds.applied_ops + [self], items=items, context=ds.context
+        )
 
     def __repr__(self):
         return f"LemmatizeOperation()"
@@ -183,7 +187,9 @@ class TokenFilterOperation(SpacyBasedOperation):
         docs = self.get_docs(ds)
         match_results = self.matcher.pipe(docs, return_matches=True)
         new_docs = map(self._filter_tokens, match_results)
-        return DataStream(new_docs, ds.applied_ops + [self])
+        return DataStream(
+            new_docs, applied_ops=ds.applied_ops + [self], context=ds.context
+        )
 
 
 def token_filter(

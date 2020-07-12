@@ -34,14 +34,22 @@ class DataStream:
     """
 
     def __init__(
-        self, items: Iterable[Any], applied_ops: Optional[List] = None,
+        self,
+        items: Iterable[Any],
+        applied_ops: Optional[List] = None,
+        context: Optional[Iterable[Any]] = None,
     ):
-        self.items = items
+        if context is not None:
+            self.items = items
+            self.context = context
+        else:
+            self.context, self.items = zip(*enumerate(items))
+
         self.applied_ops = applied_ops or []
 
     def __iter__(self):
-        for i in self.items:
-            yield i
+        for item in self.items:
+            yield item
 
     @property
     def item_type(self):
@@ -90,16 +98,28 @@ class DataFrameStream(DataStream):
         is used to select data from those columns only
     """
 
-    def __init__(self, df, columns: Union[str, List[str]]) -> None:
-        super().__init__(applied_ops=None, items=df)
+    def __init__(
+        self, df, columns: Union[str, List[str]], context_column: Optional[str] = None
+    ) -> None:
+        super().__init__(applied_ops=None, items=["dummy"])
+        self.context, self.items = self._get_items(df, columns, context_column)
         self.columns = columns
+        self.context_column = context_column
 
-    def __iter__(self):
-        for i, row in self.items.iterrows():
-            if isinstance(self.columns, list):
-                yield [row[c] for c in self.columns]
+    def _get_items(self, df, columns, context_column):
+        contexts = []
+        items = []
+        for i, row in df.iterrows():
+            context = row[context_column] if context_column else i
+            contexts.append(context)
+            if isinstance(columns, list):
+                value = [row[c] for c in columns]
             else:
-                yield row[self.columns]
+                value = row[columns]
+
+            items.append(value)
+
+        return contexts, items
 
 
 class CSVDataStream(DataFrameStream):
@@ -133,6 +153,13 @@ class CSVDataStream(DataFrameStream):
         path to the csv file
     """
 
-    def __init__(self, path: str, columns: Union[str, List[str]]):
-        super().__init__(pd.read_csv(path), columns=columns)
+    def __init__(
+        self,
+        path: str,
+        columns: Union[str, List[str]],
+        context_column: Optional[str] = None,
+    ):
+        super().__init__(
+            pd.read_csv(path), columns=columns, context_column=context_column
+        )
         self.path = path
