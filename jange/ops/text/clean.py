@@ -22,9 +22,12 @@ class CaseChangeOperation(Operation):
     ----------
     mode : str
         one of ['lower', 'capitalize', 'upper']
+    name : str
+        name of this operation
     """
 
-    def __init__(self, mode: str = "lower"):
+    def __init__(self, mode: str = "lower", name: str = "case_change"):
+        super().__init__(name=name)
         valid_modes = ["lower", "upper", "capitalize"]
         mode = mode.lower()
         if mode not in valid_modes:
@@ -50,16 +53,16 @@ class CaseChangeOperation(Operation):
         return f"CaseChangeOperation(mode='{self.mode}')"
 
 
-def lowercase() -> CaseChangeOperation:
+def lowercase(name="lowercase") -> CaseChangeOperation:
     """Helper function to create CaseChangeOperation with mode="lower"
     """
-    return CaseChangeOperation(mode="lower")
+    return CaseChangeOperation(mode="lower", name=name)
 
 
-def uppercase() -> CaseChangeOperation:
+def uppercase(name="uppercase") -> CaseChangeOperation:
     """Helper function to create CaseChangeOperation with mode="upper"
     """
-    return CaseChangeOperation(mode="upper")
+    return CaseChangeOperation(mode="upper", name=name)
 
 
 class ConvertToSpacyDocOperation(SpacyBasedOperation):
@@ -93,18 +96,24 @@ class ConvertToSpacyDocOperation(SpacyBasedOperation):
         spacy's language model
     """
 
-    def __init__(self, nlp: Optional[Language] = None) -> None:
-        super().__init__(nlp)
+    def __init__(
+        self,
+        nlp: Optional[Language] = None,
+        name: Optional[str] = "convert_to_spacy_doc",
+    ) -> None:
+        super().__init__(nlp, name=name)
 
     def run(self, ds: DataStream) -> DataStream:
         docs = self.get_docs(ds)
         return DataStream(docs, applied_ops=ds.applied_ops + [self], context=ds.context)
 
 
-def convert_to_spacy_doc(nlp: Optional[Language] = None) -> ConvertToSpacyDocOperation:
+def convert_to_spacy_doc(
+    nlp: Optional[Language] = None, name: str = "convert_to_spacy_doc"
+) -> ConvertToSpacyDocOperation:
     """Helper function to return ConvertToSpacyDocOperation
     """
-    return ConvertToSpacyDocOperation(nlp=nlp)
+    return ConvertToSpacyDocOperation(nlp=nlp, name=name)
 
 
 class LemmatizeOperation(SpacyBasedOperation):
@@ -130,8 +139,10 @@ class LemmatizeOperation(SpacyBasedOperation):
         spacy's language model
     """
 
-    def __init__(self, nlp: Optional[Language]) -> None:
-        super().__init__(nlp)
+    def __init__(
+        self, nlp: Optional[Language] = None, name: Optional[str] = "lemmatize"
+    ) -> None:
+        super().__init__(nlp, name=name)
 
     def _get_lemmatized_doc(self, doc):
         lemma_tokens = [t.lemma_ for t in doc]
@@ -149,10 +160,10 @@ class LemmatizeOperation(SpacyBasedOperation):
         return f"LemmatizeOperation()"
 
 
-def lemmatize(nlp: Optional[Language] = None) -> LemmatizeOperation:
+def lemmatize(nlp: Optional[Language] = None, name="lemmatize") -> LemmatizeOperation:
     """Helper function to return LemmatizeOperation
     """
-    return LemmatizeOperation(nlp)
+    return LemmatizeOperation(nlp, name="lemmatize")
 
 
 class TokenFilterOperation(SpacyBasedOperation):
@@ -161,8 +172,9 @@ class TokenFilterOperation(SpacyBasedOperation):
         patterns: List[List[Dict]],
         nlp: Optional[Language] = None,
         keep_matching_tokens=False,
+        name: Optional[str] = "token_filter",
     ) -> None:
-        super().__init__(nlp)
+        super().__init__(nlp, name=name)
         self.keep_matching_tokens = keep_matching_tokens
         self.patterns = patterns
         self.matcher = self._get_matcher(self.nlp, self.patterns)
@@ -207,39 +219,66 @@ class TokenFilterOperation(SpacyBasedOperation):
 
 
 def token_filter(
-    patterns: List[List[Dict]], keep_matching_tokens, nlp: Optional[Language] = None
+    patterns: List[List[Dict]],
+    keep_matching_tokens,
+    nlp: Optional[Language] = None,
+    name: Optional[str] = "token_filter",
 ) -> TokenFilterOperation:
     return TokenFilterOperation(
-        patterns=patterns, nlp=nlp, keep_matching_tokens=keep_matching_tokens
+        patterns=patterns,
+        nlp=nlp,
+        keep_matching_tokens=keep_matching_tokens,
+        name=name,
     )
 
 
 def remove_stopwords(
-    words: List[str], nlp: Optional[Language] = None
+    words: List[str],
+    nlp: Optional[Language] = None,
+    name: Optional[str] = "remove_stopwords",
 ) -> TokenFilterOperation:
     patterns = []
     for word in words:
         patterns.append([{"LOWER": word.lower()}])
-    return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
+    return TokenFilterOperation(
+        patterns, nlp=nlp, keep_matching_tokens=False, name=name
+    )
 
 
-def remove_numbers(nlp: Optional[Language] = None) -> TokenFilterOperation:
+def remove_numbers(
+    nlp: Optional[Language] = None, name: Optional[str] = "remove_numbers"
+) -> TokenFilterOperation:
     patterns = [[{"IS_DIGIT": True}]]
-    return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
+    return TokenFilterOperation(
+        patterns, nlp=nlp, keep_matching_tokens=False, name=name
+    )
 
 
-def remove_links(nlp: Optional[Language] = None) -> TokenFilterOperation:
+def remove_links(
+    nlp: Optional[Language] = None, name: Optional[str] = "remove_links"
+) -> TokenFilterOperation:
     patterns = [[{"LIKE_URL": True}]]
-    return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
+    return TokenFilterOperation(
+        patterns, nlp=nlp, keep_matching_tokens=False, name=name
+    )
 
 
-def remove_emails(nlp: Optional[Language] = None) -> TokenFilterOperation:
+def remove_emails(
+    nlp: Optional[Language] = None, name: Optional[str] = "remove_emails"
+) -> TokenFilterOperation:
     patterns = [[{"LIKE_EMAIL": True}]]
-    return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
+    return TokenFilterOperation(
+        patterns, nlp=nlp, keep_matching_tokens=False, name=name
+    )
 
 
 def remove_words_with_length_less_than(
-    length: int, nlp: Optional[Language] = None
+    length: int,
+    nlp: Optional[Language] = None,
+    name: Optional[str] = "remove_words_with_length_less_than",
 ) -> TokenFilterOperation:
     patterns = [[{"LENGTH": {"<": length}}]]
-    return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
+    return TokenFilterOperation(
+        patterns, nlp=nlp, keep_matching_tokens=False, name=name,
+    )
+

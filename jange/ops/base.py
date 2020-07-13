@@ -8,8 +8,8 @@ from .utils import cached_spacy_model
 
 
 class SpacyBasedOperation(Operation):
-    def __init__(self, nlp: Optional[Language]) -> None:
-        super().__init__()
+    def __init__(self, nlp: Optional[Language] = None, name: str = "spacy_op") -> None:
+        super().__init__(name=name)
         self.nlp = nlp or cached_spacy_model(config.DEFAULT_SPACY_MODEL)
         self.model_path = self.nlp.path
 

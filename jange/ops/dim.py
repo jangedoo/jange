@@ -1,16 +1,21 @@
 """This module contains commonly used dimension reduction algorithms
 """
+from typing import Optional
+
 from sklearn.base import TransformerMixin
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from scipy.sparse import issparse
+
 from jange.stream import DataStream
 from jange.base import Operation, TrainableMixin
 
 
 class DimensionReductionOperation(Operation, TrainableMixin):
-    def __init__(self, model: TransformerMixin) -> None:
-        super().__init__()
+    def __init__(
+        self, model: TransformerMixin, name: Optional[str] = "dim_reduction"
+    ) -> None:
+        super().__init__(name=name)
         self.model: TransformerMixin = model
 
     def run(self, ds: DataStream) -> DataStream:
@@ -34,9 +39,9 @@ class DimensionReductionOperation(Operation, TrainableMixin):
 
 def pca(n_dim: int = 2,):
     model = PCA(n_components=n_dim)
-    return DimensionReductionOperation(model)
+    return DimensionReductionOperation(model, name="pca")
 
 
 def tsne(n_dim: int = 2):
     model = TSNE(n_components=n_dim)
-    return DimensionReductionOperation(model)
+    return DimensionReductionOperation(model, name="tsne")

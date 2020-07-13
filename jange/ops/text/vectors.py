@@ -1,3 +1,4 @@
+from os import name
 from typing import Optional
 from sklearn.feature_extraction.text import TfidfVectorizer
 from spacy.language import Language
@@ -10,7 +11,7 @@ class FeatureVectorExtractionOperation:
     pass
 
 
-class TfIdfOperation(Operation, FeatureVectorExtractionOperation, TrainableMixin):
+class TfIdfOperation(Operation, TrainableMixin, FeatureVectorExtractionOperation):
     """Converts a stream of raw texts into a matrix
     of TF-IDF features
 
@@ -21,8 +22,8 @@ class TfIdfOperation(Operation, FeatureVectorExtractionOperation, TrainableMixin
     >>> ds.apply(op)
     """
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__()
+    def __init__(self, name: Optional[str] = "tfidf", *args, **kwargs) -> None:
+        super().__init__(name=name)
         self.model = TfidfVectorizer(*args, **kwargs)
 
     def run(self, ds: DataStream) -> DataStream:
@@ -36,14 +37,16 @@ class TfIdfOperation(Operation, FeatureVectorExtractionOperation, TrainableMixin
         return DataStream(vectors, ds.applied_ops + [self], context=ds.context)
 
 
-def tfidf(*args, **kwargs) -> TfIdfOperation:
+def tfidf(name: Optional[str] = "tfidf", *args, **kwargs) -> TfIdfOperation:
     """Helper function for returning TfIdfOperation"""
-    return TfIdfOperation(*args, **kwargs)
+    return TfIdfOperation(name=name, *args, **kwargs)
 
 
 class DocumentEmbeddingOperation(SpacyBasedOperation, FeatureVectorExtractionOperation):
-    def __init__(self, nlp=Optional[Language]) -> None:
-        super().__init__(nlp=nlp)
+    def __init__(
+        self, nlp: Optional[Language] = None, name: Optional[str] = "doc_embedding"
+    ) -> None:
+        super().__init__(nlp=nlp, name=name)
 
     def run(self, ds: DataStream) -> DataStream:
         docs = self.get_docs(ds)
@@ -60,5 +63,7 @@ class DocumentEmbeddingOperation(SpacyBasedOperation, FeatureVectorExtractionOpe
         )
 
 
-def doc_embedding(nlp: Optional[Language] = None) -> DocumentEmbeddingOperation:
-    return DocumentEmbeddingOperation(nlp=nlp)
+def doc_embedding(
+    nlp: Optional[Language] = None, name: Optional[str] = "doc_embedding"
+) -> DocumentEmbeddingOperation:
+    return DocumentEmbeddingOperation(nlp=nlp, name=name)
