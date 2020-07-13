@@ -1,7 +1,9 @@
-from os import name
 from typing import Optional
+
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from spacy.language import Language
+
 from jange.base import Operation, TrainableMixin
 from jange.ops.base import SpacyBasedOperation
 from jange.stream import DataStream
@@ -58,6 +60,8 @@ class DocumentEmbeddingOperation(SpacyBasedOperation, FeatureVectorExtractionOpe
                 raise Exception(
                     "A spacy model with `vectors` capability is needed for extracting document vectors"
                 )
+
+        vecs = np.array(vecs)
         return DataStream(
             items=vecs, applied_ops=ds.applied_ops + [self], context=ds.context
         )
