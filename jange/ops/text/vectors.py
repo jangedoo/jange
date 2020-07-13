@@ -1,7 +1,8 @@
 from typing import Optional
 from sklearn.feature_extraction.text import TfidfVectorizer
 from spacy.language import Language
-from ..base import Operation, SpacyBasedOperation, TrainableMixin
+from jange.base import Operation, TrainableMixin
+from jange.ops.base import SpacyBasedOperation
 from jange.stream import DataStream
 
 

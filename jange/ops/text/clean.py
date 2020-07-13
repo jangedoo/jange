@@ -165,10 +165,15 @@ class TokenFilterOperation(SpacyBasedOperation):
         super().__init__(nlp)
         self.keep_matching_tokens = keep_matching_tokens
         self.patterns = patterns
-        self.matcher = Matcher(vocab=self.nlp.vocab, validate=True)
+        self.matcher = self._get_matcher(self.nlp, self.patterns)
+
+    def _get_matcher(self, nlp, patterns):
+        matcher = Matcher(vocab=nlp.vocab, validate=True)
 
         for p in patterns:
-            self.matcher.add("MATCHES", None, p)
+            matcher.add("MATCHES", None, p)
+
+        return matcher
 
     def _filter_tokens(self, matcher_output: Tuple[Doc, List[Tuple]]) -> Doc:
         doc, matches = matcher_output
@@ -190,6 +195,15 @@ class TokenFilterOperation(SpacyBasedOperation):
         return DataStream(
             new_docs, applied_ops=ds.applied_ops + [self], context=ds.context
         )
+
+    def __getstate__(self):
+        state = super().__getstate__()
+        del state["matcher"]
+        return state
+
+    def __setstate__(self, state: dict):
+        super().__setstate__(state)
+        self.matcher = self._get_matcher(self.nlp, self.patterns)
 
 
 def token_filter(
@@ -229,4 +243,3 @@ def remove_words_with_length_less_than(
 ) -> TokenFilterOperation:
     patterns = [[{"LENGTH": {"<": length}}]]
     return TokenFilterOperation(patterns, nlp=nlp, keep_matching_tokens=False)
-

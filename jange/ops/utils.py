@@ -1,6 +1,9 @@
 from contextlib import contextmanager
+from functools import lru_cache
 from typing import List, Optional
-from .base import Operation, TrainableMixin
+
+import spacy
+from jange.base import Operation, TrainableMixin
 
 
 @contextmanager
@@ -44,3 +47,8 @@ def save(ops: List[Operation], path: str, replace: bool = False):
 
 def load(path: str) -> List[Operation]:
     pass
+
+
+@lru_cache(maxsize=32)
+def cached_spacy_model(name_or_path: str):
+    return spacy.load(name_or_path)

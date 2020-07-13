@@ -1,3 +1,4 @@
+import jange
 from jange import ops
 from jange import stream
 
@@ -13,9 +14,9 @@ def test_disable_training_fn():
         assert len(operations) == len(training_disabled_ops)
         # check that all trainable operations have should_train set to False
         assert all(
-            op.should_train == False
+            op.should_train is False
             for op in operations
-            if isinstance(op, ops.base.TrainableMixin)
+            if isinstance(op, jange.base.TrainableMixin)
         )
 
     # check that trainable operations have their `should_train` value set to
