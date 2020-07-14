@@ -12,10 +12,10 @@ jange.ops.text.clean module
    :undoc-members:
    :show-inheritance:
 
-jange.ops.text.vectors module
------------------------------
+jange.ops.text.vectorize module
+-------------------------------
 
-.. automodule:: jange.ops.text.vectors
+.. automodule:: jange.ops.text.vectorize
    :members:
    :undoc-members:
    :show-inheritance:

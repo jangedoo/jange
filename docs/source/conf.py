@@ -30,6 +30,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "recommonmark",
 ]
 napoleon_use_param = True
 napoleon_use_ivar = True

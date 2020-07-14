@@ -20,10 +20,34 @@ jange.ops.base module
    :undoc-members:
    :show-inheritance:
 
+jange.ops.cluster module
+------------------------
+
+.. automodule:: jange.ops.cluster
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+jange.ops.dim module
+--------------------
+
+.. automodule:: jange.ops.dim
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 jange.ops.read module
 ---------------------
 
 .. automodule:: jange.ops.read
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+jange.ops.topic module
+----------------------
+
+.. automodule:: jange.ops.topic
    :members:
    :undoc-members:
    :show-inheritance:

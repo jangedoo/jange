@@ -9,6 +9,27 @@ Subpackages
 
    jange.ops
    jange.stream
+   jange.vis
+
+Submodules
+----------
+
+jange.base module
+-----------------
+
+.. automodule:: jange.base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+jange.config module
+-------------------
+
+.. automodule:: jange.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------
