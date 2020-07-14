@@ -2,7 +2,7 @@ language: python
 python:
 - 3.6
 - 3.7
-- 308
+- 3.8
 env:
   global:
   - secure: "<encrypted MYPYPI_USER=username>"
