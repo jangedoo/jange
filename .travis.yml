@@ -1,25 +1,24 @@
 language: python
 python:
-- 3.6
-- 3.7
-- 3.8
+  - 3.6
+  - 3.7
 env:
   global:
-  - secure: "<encrypted MYPYPI_USER=username>"
-  - secure: "<encrypted MYPYPI_PASS=p@ssword>"
+    - secure: "<encrypted MYPYPI_USER=username>"
+    - secure: "<encrypted MYPYPI_PASS=p@ssword>"
 before_install:
-- pip install poetry
+  - pip install poetry
 install:
-- poetry install
-- poetry run python -m spacy download en_core_web_sm
+  - poetry install
+  - poetry run python -m spacy download en_core_web_sm
 script:
-- poetry run flake8 jange
-- poetry run pytest tests/
-- poetry run coverage run --source=jange -m unittest discover -b
+  - poetry run flake8 jange
+  - poetry run pytest tests/
+  - poetry run coverage run --source=jange -m unittest discover -b
 before_deploy:
-- poetry config repositories.mypypi http://mypypi.example.com/simple
-- poetry config http-basic.mypypi $MYPYPI_USER $MYPYPI_PASS
-- poetry build -f sdist
+  - poetry config repositories.mypypi http://mypypi.example.com/simple
+  - poetry config http-basic.mypypi $MYPYPI_USER $MYPYPI_PASS
+  - poetry build -f sdist
 deploy:
   provider: script
   script: poetry publish -r mypypi
