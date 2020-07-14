@@ -1,4 +1,6 @@
 # jange
+[![Build Status](https://travis-ci.org/jangedoo/jange.svg?branch=master)](https://travis-ci.org/jangedoo/jange)
+------
 jange is an easy to use NLP library for Python. It is based on popular libraries like `pandas`, `scikit-learn`, `spacy`, `plotly` and others.
 
 # Installation
