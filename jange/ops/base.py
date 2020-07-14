@@ -16,7 +16,7 @@ class SpacyBasedOperation(Operation):
     def get_docs(self, ds: DataStream) -> Iterable[Doc]:
         """Returns an interable of spacy Doc from the datastream.
         If the data stream already contains spacy Docs then they
-        are returned as-is otherwise the nlp object is used to 
+        are returned as-is otherwise the nlp object is used to
         create spacy Docs
 
         Parameters

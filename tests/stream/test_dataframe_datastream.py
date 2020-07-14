@@ -1,4 +1,3 @@
-from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 from jange.stream import DataFrameStream

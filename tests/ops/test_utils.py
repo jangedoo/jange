@@ -1,6 +1,5 @@
 import jange
 from jange import ops
-from jange import stream
 
 
 def test_disable_training_fn():

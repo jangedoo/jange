@@ -4,8 +4,8 @@ import cytoolz
 
 class OperationCollection(list):
     def __add__(self, other):
-        l = super().__add__(other)
-        return OperationCollection(l)
+        result = super().__add__(other)
+        return OperationCollection(result)
 
     def find_by_name(self, name, first_only=True):
         if first_only:
@@ -19,14 +19,14 @@ class DataStream:
     a result of some operation. DataStream object can be iterated which
     basically iterates through the underlying data. The underlying data
     is stored in `items` attribute which can be any iterable object.
-    
+
     Parameters
     ----------
     items : iterable
         an iterable that contains the raw data
 
     applied_ops : Optional[List[Operation]]
-        a list of operations that were applied to create this stream of data    
+        a list of operations that were applied to create this stream of data
 
     Example
     -------

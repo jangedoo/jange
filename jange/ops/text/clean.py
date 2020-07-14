@@ -1,9 +1,8 @@
 from typing import Optional, List, Dict, Tuple
 
-import spacy
 from spacy.tokens import Doc
 from spacy.language import Language
-from spacy.matcher import Matcher, PhraseMatcher
+from spacy.matcher import Matcher
 
 from jange.stream import DataStream
 from ..base import Operation, SpacyBasedOperation
@@ -146,18 +145,19 @@ class LemmatizeOperation(SpacyBasedOperation):
 
     def _get_lemmatized_doc(self, doc):
         lemma_tokens = [t.lemma_ for t in doc]
-        spaces = [t.whitespace_ == " " for t in doc]
-        return Doc(self.nlp.vocab, words=lemma_tokens, spaces=spaces)
+        return self.nlp.make_doc(" ".join(lemma_tokens))
 
     def run(self, ds: DataStream):
         docs = self.get_docs(ds)
         items = map(self._get_lemmatized_doc, docs)
+        for _, proc in self.nlp.pipeline:
+            items = proc(items)
         return DataStream(
             applied_ops=ds.applied_ops + [self], items=items, context=ds.context
         )
 
     def __repr__(self):
-        return f"LemmatizeOperation()"
+        return "LemmatizeOperation()"
 
 
 def lemmatize(nlp: Optional[Language] = None, name="lemmatize") -> LemmatizeOperation:
@@ -204,6 +204,8 @@ class TokenFilterOperation(SpacyBasedOperation):
         docs = self.get_docs(ds)
         match_results = self.matcher.pipe(docs, return_matches=True)
         new_docs = map(self._filter_tokens, match_results)
+        for _, proc in self.nlp.pipeline:
+            new_docs = proc(new_docs)
         return DataStream(
             new_docs, applied_ops=ds.applied_ops + [self], context=ds.context
         )
@@ -281,4 +283,3 @@ def remove_words_with_length_less_than(
     return TokenFilterOperation(
         patterns, nlp=nlp, keep_matching_tokens=False, name=name,
     )
-

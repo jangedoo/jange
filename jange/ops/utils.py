@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from functools import lru_cache
-from typing import List, Optional
+from typing import List
 
 import spacy
 from jange.base import Operation, TrainableMixin

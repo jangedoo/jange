@@ -1,7 +1,6 @@
-from typing import Any, List, Optional, Union, Iterable
-import cytoolz
+from typing import List, Optional, Union
 import pandas as pd
-from jange.base import Operation, DataStream
+from jange.base import DataStream
 
 
 class DataFrameStream(DataStream):
