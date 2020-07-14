@@ -11,6 +11,14 @@ from ..base import Operation, SpacyBasedOperation
 class CaseChangeOperation(Operation):
     """Operation for changing case of the texts.
 
+    Parameters
+    ----------
+    mode : str
+        one of `lower`, `upper` or `capitalize`
+
+    name : str
+        name of this operation
+
     Example
     --------
     >>> ds = DataStream(["AAA", "Bbb"])
@@ -21,6 +29,7 @@ class CaseChangeOperation(Operation):
     ----------
     mode : str
         one of ['lower', 'capitalize', 'upper']
+
     name : str
         name of this operation
     """
@@ -77,22 +86,28 @@ class ConvertToSpacyDocOperation(SpacyBasedOperation):
     operations will independently convert the raw texts into spacy `Doc`
     everytime you call them!
 
-    Example
-    -------
-    >>> ds = DataStream(["this is text 1", "this is text 2"])
-    >>> op = ConvertToSpacyDocOperation(nlp=nlp)
-    >>> ds.apply(op)
-
     Parameters
     ----------
     nlp : Optional[spacy.language.Language]
         spacy's language model or None. If None then by default
         `en_core_web_sm` spacy model is loaded
 
+    name : Optional[str]
+        name of this operation
+
+    Example
+    -------
+    >>> ds = DataStream(["this is text 1", "this is text 2"])
+    >>> op = ConvertToSpacyDocOperation(nlp=nlp)
+    >>> ds.apply(op)
+
     Attributes
     ---------
     nlp : spacy.language.Language
         spacy's language model
+
+    name : str
+        name of this operation
     """
 
     def __init__(
@@ -111,12 +126,34 @@ def convert_to_spacy_doc(
     nlp: Optional[Language] = None, name: str = "convert_to_spacy_doc"
 ) -> ConvertToSpacyDocOperation:
     """Helper function to return ConvertToSpacyDocOperation
+
+    Parameters
+    ----------
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    name : Optional[str]
+        name of this operation
+
+    Returns
+    -------
+    out : ConvertToSpacyDocOperation
     """
     return ConvertToSpacyDocOperation(nlp=nlp, name=name)
 
 
 class LemmatizeOperation(SpacyBasedOperation):
     """Perform lemmatization using spacy's language model
+
+    Parameters
+    ----------
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    name : Optional[str]
+        name of this operation
 
     Example
     -------
@@ -126,16 +163,13 @@ class LemmatizeOperation(SpacyBasedOperation):
     >>> print(list(ds.apply(op))
     ["orange be good"]
 
-    Parameters
-    ----------
-    nlp : Optional[spacy.language.Language]
-        spacy's language model or None. If None then by default
-        `en_core_web_sm` spacy model is loaded
-
     Attributes
     ---------
     nlp : spacy.language.Language
         spacy's language model
+
+    name : str
+        name of this operation
     """
 
     def __init__(
@@ -162,11 +196,84 @@ class LemmatizeOperation(SpacyBasedOperation):
 
 def lemmatize(nlp: Optional[Language] = None, name="lemmatize") -> LemmatizeOperation:
     """Helper function to return LemmatizeOperation
+
+    Parameters
+    ----------
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    name : Optional[str]
+        name of this operation
+
+    Returns
+    -------
+    out : LemmatizeOperation
     """
     return LemmatizeOperation(nlp, name="lemmatize")
 
 
 class TokenFilterOperation(SpacyBasedOperation):
+    """Operation for filtering individual tokens.
+
+    Spacy's token pattern matching is used for matching various
+    tokens in the document. Any tokens matching the filter can
+    either be discarded or kept while discarding the non matching ones.
+
+    Parameters
+    ----------
+    patterns : List[List[Dict]]
+        a list of patterns where each pattern is a List[Dict]. The patterns
+        are passed to spacy's Token Matcher.
+        see https://spacy.io/usage/rule-based-matching for more details
+        on how to define patterns.
+
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    keep_matching_tokens: bool
+        if true then any non-matching tokens are discarded from the document (e.g. extracting only nouns)
+        if false then any matching tokens are discarded (e.g. stopword removal)
+
+    name : Optional[str]
+        name of this operation
+
+    Example
+    -------
+    >>> nlp = spacy.load("en_core_web_sm")
+    >>> # define patterns to match [a, an, the] tokens
+    >>> patterns = [
+        [{"LOWER": "a"}],
+        [{"LOWER": "an"}],
+        [{"LOWER": "the"}]
+    ]
+    >>> # define the token filter operation to match the patterns and discard them
+    >>> op = TokenFilterOperation(patterns=patterns, nlp=nlp, keep_matching_tokens=False)
+    >>> ds = DataStream(["that is an orange"])
+    >>> print(list(ds.apply(op))
+    ["that is orange"]
+
+    See https://spacy.io/usage/rule-based-matching#adding-patterns-attributes for more details
+    on what token patterns can be used.
+
+    Attributes
+    ---------
+    nlp : spacy.language.Language
+        spacy's language model
+
+    keep_matching_tokens : bool
+        whether to discard the tokens matched by the filter from the document
+        or to keep them
+
+    patterns : List[List[Dict]]
+        patterns to pass to spacy's Matcher
+
+    name : str
+        name of this operation
+
+    """
+
     def __init__(
         self,
         patterns: List[List[Dict]],
@@ -226,6 +333,31 @@ def token_filter(
     nlp: Optional[Language] = None,
     name: Optional[str] = "token_filter",
 ) -> TokenFilterOperation:
+    """Helper function to create TokenFilterOperation
+
+    Parameters
+    ----------
+    patterns : List[List[Dict]]
+        a list of patterns where each pattern is a List[Dict]. The patterns
+        are passed to spacy's Token Matcher.
+        see https://spacy.io/usage/rule-based-matching for more details
+        on how to define patterns.
+
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    keep_matching_tokens: bool
+        if true then any non-matching tokens are discarded from the document (e.g. extracting only nouns)
+        if false then any matching tokens are discarded (e.g. stopword removal)
+
+    name : Optional[str]
+        name of this operation
+
+    Returns
+    -------
+    TokenFilterOperation
+    """
     return TokenFilterOperation(
         patterns=patterns,
         nlp=nlp,
@@ -239,6 +371,24 @@ def remove_stopwords(
     nlp: Optional[Language] = None,
     name: Optional[str] = "remove_stopwords",
 ) -> TokenFilterOperation:
+    """TokenFilterOperation to remove stopwords
+
+    Parameters
+    ----------
+    words : List[str]
+        a list of words to remove from the text
+
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    name : Optional[str]
+        name of this operation
+
+    Returns
+    -------
+    TokenFilterOperation
+    """
     patterns = []
     for word in words:
         patterns.append([{"LOWER": word.lower()}])
@@ -250,6 +400,21 @@ def remove_stopwords(
 def remove_numbers(
     nlp: Optional[Language] = None, name: Optional[str] = "remove_numbers"
 ) -> TokenFilterOperation:
+    """TokenFilterOperation to remove numbers
+
+    Parameters
+    ----------
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    name : Optional[str]
+        name of this operation
+
+    Returns
+    -------
+    TokenFilterOperation
+    """
     patterns = [[{"IS_DIGIT": True}]]
     return TokenFilterOperation(
         patterns, nlp=nlp, keep_matching_tokens=False, name=name
@@ -259,6 +424,21 @@ def remove_numbers(
 def remove_links(
     nlp: Optional[Language] = None, name: Optional[str] = "remove_links"
 ) -> TokenFilterOperation:
+    """TokenFilterOperation to remove hyperlinks
+
+    Parameters
+    ----------
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    name : Optional[str]
+        name of this operation
+
+    Returns
+    -------
+    TokenFilterOperation
+    """
     patterns = [[{"LIKE_URL": True}]]
     return TokenFilterOperation(
         patterns, nlp=nlp, keep_matching_tokens=False, name=name
@@ -268,6 +448,21 @@ def remove_links(
 def remove_emails(
     nlp: Optional[Language] = None, name: Optional[str] = "remove_emails"
 ) -> TokenFilterOperation:
+    """TokenFilterOperation to remove emails
+
+    Parameters
+    ----------
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    name : Optional[str]
+        name of this operation
+
+    Returns
+    -------
+    TokenFilterOperation
+    """
     patterns = [[{"LIKE_EMAIL": True}]]
     return TokenFilterOperation(
         patterns, nlp=nlp, keep_matching_tokens=False, name=name
@@ -279,6 +474,26 @@ def remove_words_with_length_less_than(
     nlp: Optional[Language] = None,
     name: Optional[str] = "remove_words_with_length_less_than",
 ) -> TokenFilterOperation:
+    """TokenFilterOperation to remove tokens that have fewer characters
+    than specified
+
+    Parameters
+    ----------
+    length : int
+        atleast this many characters should be in the token, otherwise
+        it is discarded
+
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    name : Optional[str]
+        name of this operation
+
+    Returns
+    -------
+    TokenFilterOperation
+    """
     patterns = [[{"LENGTH": {"<": length}}]]
     return TokenFilterOperation(
         patterns, nlp=nlp, keep_matching_tokens=False, name=name,

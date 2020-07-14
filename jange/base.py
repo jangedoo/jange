@@ -66,7 +66,7 @@ class DataStream:
 
     @property
     def item_type(self):
-        if hasattr(self.items, "len"):
+        if hasattr(self.items, "__len__"):
             return type(self.items[0])
         else:
             first, items = cytoolz.peek(self.items)

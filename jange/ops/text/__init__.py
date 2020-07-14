@@ -14,4 +14,10 @@ from .clean import (
     remove_stopwords,
     remove_words_with_length_less_than,
 )
-from .vectors import TfIdfOperation, tfidf, DocumentEmbeddingOperation, doc_embedding
+from .vectorize import (
+    SklearnBasedVectorizer,
+    tfidf,
+    count,
+    DocumentEmbeddingOperation,
+    doc_embedding,
+)
