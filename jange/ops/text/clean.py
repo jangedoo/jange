@@ -151,7 +151,7 @@ class LemmatizeOperation(SpacyBasedOperation):
         docs = self.get_docs(ds)
         items = map(self._get_lemmatized_doc, docs)
         for _, proc in self.nlp.pipeline:
-            items = proc(items)
+            items = proc.pipe(items)
         return DataStream(
             applied_ops=ds.applied_ops + [self], items=items, context=ds.context
         )
@@ -205,7 +205,7 @@ class TokenFilterOperation(SpacyBasedOperation):
         match_results = self.matcher.pipe(docs, return_matches=True)
         new_docs = map(self._filter_tokens, match_results)
         for _, proc in self.nlp.pipeline:
-            new_docs = proc(new_docs)
+            new_docs = proc.pipe(new_docs)
         return DataStream(
             new_docs, applied_ops=ds.applied_ops + [self], context=ds.context
         )
