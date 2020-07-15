@@ -47,7 +47,7 @@ def test_uses_passed_nlp_object():
         (
             ["this is a text", "visit us at http://example.com"],
             [[{"LOWER": "text"}], [{"LIKE_URL": True}]],
-            ["this is a ", "visit us at "],
+            ["this is a", "visit us at"],
         ),
     ],
 )
@@ -107,7 +107,7 @@ def test_remove_stopwords():
 
 def test_remove_numbers():
     texts = ["One is 1", "Hey, my number is 23458"]
-    expected = ["One is ", "Hey, my number is "]
+    expected = ["One is", "Hey, my number is"]
     ds = DataStream(texts)
     actual = list(map(str, ds.apply(remove_numbers())))
 
@@ -119,7 +119,7 @@ def test_remove_links():
         "visit us at www.example.com/testing",
         "our website is http://example.com/",
     ]
-    expected = ["visit us at ", "our website is "]
+    expected = ["visit us at", "our website is"]
     ds = DataStream(texts)
     actual = list(map(str, ds.apply(remove_links())))
 
@@ -131,7 +131,7 @@ def test_remove_emails():
         "please contact us at: info@example.com",
         "send email @ test@example.com",
     ]
-    expected = ["please contact us at: ", "send email @ "]
+    expected = ["please contact us at:", "send email @"]
     ds = DataStream(texts)
     actual = list(map(str, ds.apply(remove_emails())))
 

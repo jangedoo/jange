@@ -1,5 +1,6 @@
 from typing import Any, List, Optional, Iterable
 import cytoolz
+from scipy.sparse import issparse
 
 
 class OperationCollection(list):
@@ -50,23 +51,46 @@ class DataStream:
         applied_ops: Optional[List] = None,
         context: Optional[Iterable[Any]] = None,
     ):
-        if context is not None:
-            self.items = items
-            self.context = context
-        else:
-            self.context, self.items = zip(*enumerate(items))
+        self._validate_items_or_raise(items)
+
+        self.items = items
+        self.context = context
 
         if applied_ops and not isinstance(applied_ops, OperationCollection):
             applied_ops = OperationCollection(applied_ops)
         self.applied_ops = applied_ops or OperationCollection()
+
+    def _is_countable(self, x):
+        return hasattr(x, "__len__")
+
+    def _validate_items_or_raise(self, items):
+        if items is None:
+            raise ValueError("items cannot be None")
+
+        if self._is_countable(items):
+            # sparse matrix don't support calling len
+            # so use getnnz()
+            if issparse(items):
+                count = items.getnnz()
+            else:
+                count = len(items)
+
+            if count == 0:
+                raise ValueError(
+                    f"items must have atleast one element. received {items}"
+                )
 
     def __iter__(self):
         for item in self.items:
             yield item
 
     @property
+    def is_countable(self) -> bool:
+        return self._is_countable(self.items)
+
+    @property
     def item_type(self):
-        if hasattr(self.items, "__len__"):
+        if self.is_countable:
             return type(self.items[0])
         else:
             first, items = cytoolz.peek(self.items)
@@ -96,3 +120,14 @@ class Operation:
 class TrainableMixin:
     def __init__(self) -> None:
         self.should_train = True
+
+
+# %%
+import numpy as np
+from scipy import sparse
+
+a = np.array([[0, 1], [3, 4]])
+b = sparse.coo_matrix(a)
+
+
+# %%

@@ -45,6 +45,7 @@ def test_vectorizes_correctly(op, input, num_vocab, output_shape):
 def test_does_not_train_while_training_is_disabled():
     ds = DataStream(["this is text1", "this is text2"])
     op = SklearnBasedVectorizer(model=MagicMock())
+    op.model.transform.return_value = ["does not", "matter"]
     op.should_train = False
     ds.apply(op)
     op.model.fit.assert_not_called()

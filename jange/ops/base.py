@@ -54,6 +54,7 @@ class SpacyBasedOperation(Operation):
         tokens = [t for t in doc if t.i not in token_ids]
         words = [t.text for t in tokens]
         spaces = [t.whitespace_ == " " for t in tokens]
+        spaces[-1] = False
         return Doc(self.nlp.vocab, words=words, spaces=spaces)
 
     def __getstate__(self):
