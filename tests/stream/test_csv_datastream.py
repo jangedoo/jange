@@ -32,11 +32,6 @@ def test_only_returns_data_for_selected_columns(read_csv, df, columns, expected)
     assert list(ds) == expected
 
 
-from unittest.mock import patch
-import pandas as pd
-from jange import stream
-
-
 @patch("jange.stream.stream.pd.read_csv")
 def test_from_csv_returns_csv_stream(read_csv):
     path = "test.csv"
