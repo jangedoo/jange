@@ -1,7 +1,5 @@
 """This module contains commonly used dimension reduction algorithms
 """
-from typing import Optional
-
 from sklearn.base import TransformerMixin
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
