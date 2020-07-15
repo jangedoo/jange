@@ -12,9 +12,20 @@ from jange.base import Operation, TrainableMixin
 
 
 class DimensionReductionOperation(Operation, TrainableMixin):
-    def __init__(
-        self, model: TransformerMixin, name: Optional[str] = "dim_reduction"
-    ) -> None:
+    """Operation for reducing dimension of a multi-dimensional array.
+    This operation is primarily used for reducing large feature space
+    to 2D or 3D for easy visualization.
+
+    Parameters
+    ----------
+    model : TransformerMixin
+        a scikit-learn model that reduces the dimensions. Usually it will
+        be PCA or TSNE.
+    name : str
+        name of this operation
+    """
+
+    def __init__(self, model: TransformerMixin, name: str = "dim_reduction") -> None:
         super().__init__(name=name)
         self.model: TransformerMixin = model
 
@@ -38,10 +49,32 @@ class DimensionReductionOperation(Operation, TrainableMixin):
 
 
 def pca(n_dim: int = 2,):
+    """DimensionReductionOperation with PCA
+
+    Parameters
+    ----------
+    n_dim : int, optional
+        reduce the original n-dimensional array to `n_dim` array, by default 2
+
+    Returns
+    -------
+    DimensioonReductionOperation
+    """
     model = PCA(n_components=n_dim)
     return DimensionReductionOperation(model, name="pca")
 
 
 def tsne(n_dim: int = 2):
+    """DimensionReductionOperation with TSNE
+
+    Parameters
+    ----------
+    n_dim : int, optional
+        reduce the original n-dimensional array to `n_dim` array, by default 2
+
+    Returns
+    -------
+    DimensioonReductionOperation
+    """
     model = TSNE(n_components=n_dim)
     return DimensionReductionOperation(model, name="tsne")
