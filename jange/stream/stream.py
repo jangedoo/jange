@@ -2,6 +2,8 @@ from typing import List, Optional, Union
 import pandas as pd
 from jange.base import DataStream
 
+__all__ = ["DataFrameStream", "CSVDataStream", "from_csv", "from_df"]
+
 
 class DataFrameStream(DataStream):
     """Represents a stream of data by iterating over the rows in a
@@ -102,3 +104,11 @@ class CSVDataStream(DataFrameStream):
             pd.read_csv(path), columns=columns, context_column=context_column
         )
         self.path = path
+
+
+def from_csv(path: str, columns: list) -> DataStream:
+    return CSVDataStream(path=path, columns=columns)
+
+
+def from_df(df, columns: list) -> DataStream:
+    return DataFrameStream(df, columns)

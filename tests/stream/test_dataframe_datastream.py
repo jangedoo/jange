@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from jange.stream import DataFrameStream
+from jange.stream import DataFrameStream, from_df
 
 
 @pytest.fixture
@@ -25,3 +25,9 @@ def test_can_iterate_all_rows(df):
 def test_only_returns_data_for_selected_columns(df, columns, expected):
     ds = DataFrameStream(df=df, columns=columns)
     assert list(ds) == expected
+
+
+def test_from_df_returns_dataframe_stream():
+    df = pd.DataFrame([])
+    ds = from_df(df=df, columns="test")
+    assert isinstance(ds, DataFrameStream)
