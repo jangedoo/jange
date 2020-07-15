@@ -120,14 +120,3 @@ class Operation:
 class TrainableMixin:
     def __init__(self) -> None:
         self.should_train = True
-
-
-# %%
-import numpy as np
-from scipy import sparse
-
-a = np.array([[0, 1], [3, 4]])
-b = sparse.coo_matrix(a)
-
-
-# %%

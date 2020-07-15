@@ -40,4 +40,3 @@ def test___setstate__restores_operation():
     assert op.name == "myop"
     assert op.model_path == "en_core_web_sm"
     assert op.nlp == cached_spacy_model("en_core_web_sm")
-

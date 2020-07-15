@@ -22,7 +22,7 @@ def test_minibatch_kmeans_returns_clusteroperation():
 
 def test_raises_error_if_invalid_model_passed():
     with pytest.raises(ValueError):
-        op = cluster.ClusterOperation(model=MagicMock())
+        cluster.ClusterOperation(model=MagicMock())
 
 
 @pytest.mark.parametrize("model_class", cluster.SUPPORTED_CLASSES)

@@ -21,7 +21,7 @@ def test_tsne_returns_proper_operation():
 
 def test_raises_error_if_invalid_model_passed():
     with pytest.raises(ValueError):
-        op = dim.DimensionReductionOperation(model=MagicMock())
+        dim.DimensionReductionOperation(model=MagicMock())
 
 
 @pytest.mark.parametrize("model_class", dim.SUPPORTED_CLASSES)
@@ -61,4 +61,3 @@ def test_calls_appropriate_underlying_methods_for_training_and_prediction(
         assert output.items == test_return_value
     else:
         raise Exception("model class not expected")
-
