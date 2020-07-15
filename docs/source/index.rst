@@ -29,28 +29,30 @@ Not convinced? Take a look at an example below
 
 Example
 =======
-```python
-from sklearn.datasets import fetch_20newsgroups
-from jange import stream, ops, vis
+::
 
-texts, labels = fetch_20newsgroups(shuffle=False, return_X_y=True)
+   from sklearn.datasets import fetch_20newsgroups
+   from jange import stream, ops, vis
 
-# create a data stream
-ds = DataStream(items=texts)
+   texts, labels = fetch_20newsgroups(shuffle=False, return_X_y=True)
 
-# apply operations to the stream to get clusters
-clusters_ds = ds.apply(
-   ops.text.remove_emails(),
-   ops.text.remove_links(),
-   ops.text.tfidf(max_features=5000),
-   ops.cluster.minibatch_kmeans(n_clusters=4)
-)
+   # create a data stream 
+   ds = DataStream(items=texts)
 
-for text_idx, cluster in zip(clusters_ds.context, clusters_ds):
-   print(texts[text_idx][200:500]) # discard email header and limit to 300 chars
-   print(f"Cluster = {cluster}")
-   print("\n\n")
-```
+   # apply operations to the stream to get clusters
+   clusters_ds = ds.apply(
+      ops.text.remove_emails(),
+      ops.text.remove_links(),
+      ops.text.tfidf(max_features=5000),
+      ops.cluster.minibatch_kmeans(n_clusters=4)
+   )
+
+   for text_idx, cluster in zip(clusters_ds.context, clusters_ds):
+      print(texts[text_idx][200:500]) # discard email header and limit to 300 chars
+      print(f"Cluster = {cluster}")
+      print("\n\n")
+
+Check out tutorial :ref:`tutorial`
 
 Installation
 ============
@@ -69,11 +71,8 @@ Visit https://spacy.io/models for available models in various sizes and language
    :maxdepth: 2
    :caption: Contents:
 
-   modules
+   tutorial
+   references
    
 Indices and tables
 ==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
