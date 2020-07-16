@@ -1,6 +1,8 @@
 from jange.ops.text.clean import token_filter
 import pytest
 import spacy
+from spacy.language import Language
+from spacy.matcher import Matcher
 from spacy.tokens import Doc
 from jange.ops.text import (
     TokenFilterOperation,
@@ -11,6 +13,7 @@ from jange.ops.text import (
     remove_emails,
 )
 from jange.stream import DataStream
+from jange.ops.utils import cached_spacy_model
 
 
 def test_accepts_stream_of_texts():
@@ -146,3 +149,35 @@ def test_remove_words_with_length_less_than():
     actual = list(map(str, ds.apply(remove_words_with_length_less_than(length=4))))
 
     assert actual == expected
+
+
+def test___getstate___does_not_contain_spacy_nlp_or_matcher_object():
+    op = TokenFilterOperation(patterns=[])
+    assert not any(
+        (
+            isinstance(obj, Language) or isinstance(obj, Matcher)
+            for obj in op.__getstate__().values()
+        )
+    )
+
+
+def test___setstate__restores_operation():
+    state = {
+        "name": "myop",
+        "model_path": "en_core_web_sm",
+        "keep_matching_tokens": False,
+        "patterns": [[{"LOWER": "token"}]],
+    }
+    op = TokenFilterOperation.__new__(TokenFilterOperation)
+    assert hasattr(op, "name") is False
+    assert hasattr(op, "model_path") is False
+    assert hasattr(op, "keep_matching_tokens") is False
+    assert hasattr(op, "patterns") is False
+
+    op.__setstate__(state)
+
+    assert op.name == "myop"
+    assert op.model_path == "en_core_web_sm"
+    assert op.nlp == cached_spacy_model("en_core_web_sm")
+    assert op.patterns == [[{"LOWER": "token"}]]
+    assert isinstance(op.matcher, Matcher)

@@ -103,6 +103,11 @@ class DataStream:
             x = op.run(x)
         return x
 
+    def __repr__(self) -> str:
+        item_type = self.item_type
+        total_items = len(self.items) if self.is_countable else "unknown"
+        return f"DataStream(item_type={item_type}, is_finite={self.is_countable}, total_items={total_items})"
+
 
 class Operation:
     def __init__(self, name: Optional[str] = None) -> None:

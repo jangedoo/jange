@@ -33,7 +33,7 @@ class SklearnBasedVectorizer(Operation, TrainableMixin):
 
     Attributes
     ----------
-    model : Union[TfidfVectorizer, CountVectorizer]
+    model : Union[TfidfVectorizer, CountVectorizer, HashingVectorizer]
         underlying model for vectorizing texts
 
     name : str
@@ -49,14 +49,18 @@ class SklearnBasedVectorizer(Operation, TrainableMixin):
         self.model = model
 
     def run(self, ds: DataStream) -> DataStream:
-        x = list(ds.items)
+        x = ds.items if ds.is_countable else list(ds.items)
         if not isinstance(x[0], str):
             x = list(map(str, x))
+
         if self.should_train:
             self.model.fit(x)
 
         vectors = self.model.transform(x)
         return DataStream(vectors, ds.applied_ops + [self], context=ds.context)
+
+    def __repr__(self) -> str:
+        return f"SklearnBasedVectorizer(model={self.model}, name={self.name}"
 
 
 def tfidf(
@@ -67,7 +71,7 @@ def tfidf(
     norm: str = "l2",
     use_idf: bool = True,
     name: str = "tfidf",
-    **kwargs
+    **kwargs,
 ) -> SklearnBasedVectorizer:
     """Returns tfidf based feature vector extraction.
     Uses sklearn's TfidfVectorizer as underlying model.
@@ -129,7 +133,7 @@ def count(
     min_df: Union[int, float] = 1,
     ngram_range: Tuple[int, int] = (1, 1),
     name: Optional[str] = "count",
-    **kwargs
+    **kwargs,
 ) -> SklearnBasedVectorizer:
     """Returns count based feature vector extraction.
     Uses sklearn's CountVectorizer as underlying model.
