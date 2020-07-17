@@ -1,0 +1,51 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "echoCommand": true,
+    "tasks": [
+        {
+            "label": "unit_tests",
+            "group": "test",
+            "command": "poetry",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "type": "shell",
+            "args": [
+                "run",
+                "pytest",
+                "--cov-report",
+                "xml:coverage.xml",
+                "--cov-report",
+                "html",
+                "--cov=jange",
+                "tests/",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                {
+                    "fileLocation": "absolute",
+                    "pattern": [
+                        {
+                            "regexp": "^\\s+File \"(.*)\", line (\\d+), in (.*)$",
+                            "file": 1,
+                            "line": 2
+                        },
+                        {
+                            "regexp": "^\\s+(.*)$",
+                            "message": 1
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
