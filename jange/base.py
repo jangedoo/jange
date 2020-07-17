@@ -1,5 +1,6 @@
 from typing import Any, List, Optional, Iterable
 import cytoolz
+import more_itertools
 from scipy.sparse import issparse
 
 
@@ -30,7 +31,10 @@ class OperationCollection(list):
         >>> ds.applied_ops.find_by_name(name="token_filter", first_only=False)
         """
         if first_only:
-            return next((op for op in self if op.name == name))
+            try:
+                return next((op for op in self if op.name == name))
+            except StopIteration:
+                raise LookupError(f"Operation with name {name} was not found")
         else:
             return OperationCollection(op for op in self if op.name == name)
 
@@ -65,7 +69,7 @@ class OperationCollection(list):
         if found:
             return output
         else:
-            return OperationCollection()
+            raise LookupError(f"Operation with name {name} was not found")
 
 
 class DataStream:
@@ -104,7 +108,41 @@ class DataStream:
         applied_ops: Optional[List] = None,
         context: Optional[Iterable[Any]] = None,
     ):
-        self._validate_items_or_raise(items)
+        if items is None:
+            raise ValueError("items cannot be None")
+
+        # items is countable
+        # if items count is 0 then raise Exception
+        # if context is None then generate a list of context
+        # if context is generator then raise Exception
+        # if context is countable and does not have same length as items
+        # then raise Exception
+
+        if self._is_countable(items):
+            if self._count_items(items) == 0:
+                raise ValueError(
+                    f"items must contain atleast one element but got {items}"
+                )
+            elif context is None:
+                context = list(range(len(items)))
+            elif not self._is_countable(context):
+                raise ValueError(
+                    f"context cannot be a generator when items is not a generator but got {context}"
+                )
+            else:
+                items_len = self._count_items(items)
+                context_len = self._count_items(context)
+                if items_len != context_len:
+                    raise ValueError(
+                        "items and context should have same length "
+                        f"but received items with length={items_len} and context with length={context_len}"
+                    )
+
+        # items is not countable i.e. a generator
+        # if context is None then create a context
+        else:
+            if context is None:
+                context, items = more_itertools.unzip(enumerate(items))
 
         self.items = items
         self.context = context
@@ -116,22 +154,16 @@ class DataStream:
     def _is_countable(self, x):
         return hasattr(x, "__len__")
 
-    def _validate_items_or_raise(self, items):
-        if items is None:
-            raise ValueError("items cannot be None")
+    def _count_items(self, items):
+        if not self._is_countable(items):
+            raise AttributeError(
+                "Length of this datastream cannot be determined because the items are from a generator"
+            )
 
-        if self._is_countable(items):
-            # sparse matrix don't support calling len
-            # so use getnnz()
-            if issparse(items):
-                count = items.getnnz()
-            else:
-                count = len(items)
-
-            if count == 0:
-                raise ValueError(
-                    f"items must have atleast one element. received {items}"
-                )
+        if issparse(items):
+            return items.shape[0]
+        else:
+            return len(items)
 
     def __iter__(self):
         for item in self.items:
@@ -139,15 +171,7 @@ class DataStream:
 
     @property
     def total_items(self):
-        if not self.is_countable:
-            raise AttributeError(
-                "Length of this datastream cannot be determined because the items are from a generator"
-            )
-
-        if issparse(self.items):
-            return self.items.shape[0]
-        else:
-            return len(self.items)
+        return self._count_items(self.items)
 
     @property
     def is_countable(self) -> bool:

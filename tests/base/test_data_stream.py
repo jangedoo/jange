@@ -47,9 +47,10 @@ def test_converts_applied_ops_to_operation_collection(ops):
 
 
 @pytest.mark.parametrize("items", [[], None, tuple(), set()])
-def test_raises_exception_when_items_is_finite_but_empty_or_none(items):
+@pytest.mark.parametrize("context", [None, ["a", "b"], [1, 2]])
+def test_raises_exception_when_items_is_finite_but_empty_or_none(items, context):
     with pytest.raises(ValueError):
-        DataStream(items=items)
+        DataStream(items=items, context=context)
 
 
 def test_checking_item_type_for_generators_does_not_consume():
@@ -59,3 +60,47 @@ def test_checking_item_type_for_generators_does_not_consume():
     assert ds.is_countable is False
     assert ds.item_type == int
     assert len(list(ds)) == num_elements
+
+
+@pytest.mark.parametrize(
+    "items", [[1, 2, 3], ("a", "b")],
+)
+@pytest.mark.parametrize("is_items_generator", [True, False])
+def test_context_is_always_available(is_items_generator, items):
+    """whether or not items is generator or fixed, context should
+    be available
+    """
+    expected_length = len(items)
+    if is_items_generator:
+        items = (x for x in items)
+    ds = DataStream(items=items, context=None)
+    assert len(list(ds.items)) == expected_length
+    assert len(list(ds.context)) == expected_length
+
+
+@pytest.mark.parametrize("is_context_generator", [True, False])
+@pytest.mark.parametrize("items_len,context_len", [(2, 3), (1, 2)])
+def test_raises_error_when_context_is_not_countable_or_not_same_length_as_items_but_items_is_countable(
+    items_len, context_len, is_context_generator
+):
+    items = list(range(items_len))
+    context = range(context_len)
+    if is_context_generator:
+        context = (x for x in context)
+    with pytest.raises(ValueError):
+        DataStream(items=items, context=context)
+
+
+@pytest.mark.parametrize("is_items_generator", [True, False])
+def test_returns_total_items_if_countable_else_exception(is_items_generator):
+    items = [1, 2, 3]
+    items_count = len(items)
+    if is_items_generator:
+        items = (x for x in items)
+
+    ds = DataStream(items)
+    if is_items_generator:
+        with pytest.raises(AttributeError):
+            ds.total_items
+    else:
+        assert ds.total_items == items_count

@@ -319,6 +319,7 @@ class TokenFilterOperation(SpacyBasedOperation):
 
     def run(self, ds: DataStream) -> DataStream:
         docs = zip(self.get_docs(ds), ds.context)
+        # match results is a tuple ((doc, matches), context)
         match_results = self.matcher.pipe(docs, return_matches=True, as_tuples=True)
         new_docs_with_context = more_itertools.map_except(
             self._filter_tokens, match_results, EmptyTextError

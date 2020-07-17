@@ -49,7 +49,12 @@ class SklearnBasedVectorizer(Operation, TrainableMixin):
         self.model = model
 
     def run(self, ds: DataStream) -> DataStream:
-        x = ds.items if ds.is_countable else list(ds.items)
+        if ds.is_countable:
+            x = ds.items
+            context = ds.context
+        else:
+            x = list(ds.items)
+            context = list(ds.context)
 
         if not isinstance(x[0], str):
             x = list(map(str, x))
@@ -58,7 +63,7 @@ class SklearnBasedVectorizer(Operation, TrainableMixin):
             self.model.fit(x)
 
         vectors = self.model.transform(x)
-        return DataStream(vectors, ds.applied_ops + [self], context=ds.context)
+        return DataStream(vectors, ds.applied_ops + [self], context=context)
 
     def __repr__(self) -> str:
         return f"SklearnBasedVectorizer(model={self.model}, name={self.name}"
