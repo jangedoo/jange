@@ -1,6 +1,5 @@
 from typing import Optional, List, Dict, Tuple
 
-import cytoolz
 import more_itertools
 from spacy.tokens import Doc
 from spacy.language import Language

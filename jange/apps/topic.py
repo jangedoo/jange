@@ -1,5 +1,5 @@
 from typing import Iterable, Optional, Union, List
-from jange import base, ops, stream, vis
+from jange import base, ops, stream
 
 
 def topic_model(
@@ -29,4 +29,3 @@ def topic_model(
     return topic_modeling_op.map_topics(
         topics_ds, feature_names=feature_names, max_words_per_topic=max_words_per_topic
     )
-
