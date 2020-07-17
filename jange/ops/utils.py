@@ -41,14 +41,6 @@ def disable_training(ops: List[Operation]) -> List[Operation]:
                 op.should_train = original_mode[i]
 
 
-def save(ops: List[Operation], path: str, replace: bool = False):
-    pass
-
-
-def load(path: str) -> List[Operation]:
-    pass
-
-
 @lru_cache(maxsize=32)
 def cached_spacy_model(name_or_path: str):
     return spacy.load(name_or_path)
