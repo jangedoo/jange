@@ -137,7 +137,8 @@ class DataStream:
         for item in self.items:
             yield item
 
-    def __len__(self):
+    @property
+    def total_items(self):
         if not self.is_countable:
             raise AttributeError(
                 "Length of this datastream cannot be determined because the items are from a generator"
@@ -169,7 +170,7 @@ class DataStream:
 
     def __repr__(self) -> str:
         item_type = self.item_type
-        total_items = len(self) if self.is_countable else "unknown"
+        total_items = self.total_items if self.is_countable else "unknown"
         return f"DataStream(item_type={item_type}, is_finite={self.is_countable}, total_items={total_items})"
 
 
