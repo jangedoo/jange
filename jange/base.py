@@ -8,11 +8,64 @@ class OperationCollection(list):
         result = super().__add__(other)
         return OperationCollection(result)
 
-    def find_by_name(self, name, first_only=True):
+    def find_by_name(self, name: str, first_only=True):
+        """Finds the operation(s) by its name.
+
+        Parameters
+        ----------
+        name : str
+            name of the operation
+        first_only : bool, optional
+            if True then returns first operation with
+            the given name otherwise returns all operations
+            matching the given name, by default True
+
+        Returns
+        -------
+        Operation
+
+        Example
+        -------
+        >>> ds.applied_ops.find_by_name(name="tfidf")
+        >>> ds.applied_ops.find_by_name(name="token_filter", first_only=False)
+        """
         if first_only:
             return next((op for op in self if op.name == name))
         else:
             return [op for op in self if op.name == name]
+
+    def find_up_to(self, name: str):
+        """Returns all operations upto the operation matching the given name
+
+        Parameters
+        ----------
+        name : str
+            name of the operation
+
+        Returns
+        -------
+        OperationCollection[Operation]
+            Collection of operations that were applied upto the operation with
+            given name
+
+        Example
+        -------
+        To return all operations applied to a DataStream up to an operation with
+        name 'tfidf'
+        >>> feature_extraction_ops = ds.find_up_to(name="tfidf")
+        """
+        found = False
+        output = OperationCollection()
+        for op in self:
+            output.append(op)
+            if op.name == name:
+                found = True
+                break
+
+        if found:
+            return output
+        else:
+            return []
 
 
 class DataStream:
@@ -84,6 +137,17 @@ class DataStream:
         for item in self.items:
             yield item
 
+    def __len__(self):
+        if not self.is_countable:
+            raise AttributeError(
+                "Length of this datastream cannot be determined because the items are from a generator"
+            )
+
+        if issparse(self.items):
+            return self.items.shape[0]
+        else:
+            return len(self.items)
+
     @property
     def is_countable(self) -> bool:
         return self._is_countable(self.items)
@@ -105,7 +169,7 @@ class DataStream:
 
     def __repr__(self) -> str:
         item_type = self.item_type
-        total_items = len(self.items) if self.is_countable else "unknown"
+        total_items = len(self) if self.is_countable else "unknown"
         return f"DataStream(item_type={item_type}, is_finite={self.is_countable}, total_items={total_items})"
 
 

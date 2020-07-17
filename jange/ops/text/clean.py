@@ -326,6 +326,14 @@ class TokenFilterOperation(SpacyBasedOperation):
         super().__setstate__(state)
         self.matcher = self._get_matcher(self.nlp, self.patterns)
 
+    def __repr__(self) -> str:
+        patterns = (
+            self.patterns
+            if len(self.patterns) < 10
+            else f"{self.patterns[:10]}... and others"
+        )
+        return f"TokenFilterOperation(patterns={patterns}, keep_matching_tokens={self.keep_matching_tokens}, name={self.name})"
+
 
 def token_filter(
     patterns: List[List[Dict]],
