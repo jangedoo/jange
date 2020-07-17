@@ -1,11 +1,17 @@
 from typing import Optional, List, Dict, Tuple
 
+import cytoolz
+import more_itertools
 from spacy.tokens import Doc
 from spacy.language import Language
 from spacy.matcher import Matcher
 
 from jange.stream import DataStream
 from ..base import Operation, SpacyBasedOperation
+
+
+class EmptyTextError(Exception):
+    pass
 
 
 class CaseChangeOperation(Operation):
@@ -295,7 +301,7 @@ class TokenFilterOperation(SpacyBasedOperation):
         return matcher
 
     def _filter_tokens(self, matcher_output: Tuple[Doc, List[Tuple]]) -> Doc:
-        doc, matches = matcher_output
+        ((doc, matches), context) = matcher_output
         matching_token_ids = []
         for _, start, end in matches:
             for token in doc[start:end]:
@@ -304,17 +310,23 @@ class TokenFilterOperation(SpacyBasedOperation):
         tokens_to_discard = matching_token_ids
         if self.keep_matching_tokens:
             tokens_to_discard = [t.i for t in doc if t.i not in matching_token_ids]
-
-        return self.discard_tokens_from_doc(doc, tokens_to_discard)
+        # if we have to discard all tokens in the document
+        # then return None
+        if len(tokens_to_discard) == len(doc):
+            raise EmptyTextError
+        else:
+            return self.discard_tokens_from_doc(doc, tokens_to_discard).text, context
 
     def run(self, ds: DataStream) -> DataStream:
-        docs = self.get_docs(ds)
-        match_results = self.matcher.pipe(docs, return_matches=True)
-        new_docs = map(self._filter_tokens, match_results)
-        for _, proc in self.nlp.pipeline:
-            new_docs = proc.pipe(new_docs)
+        docs = zip(self.get_docs(ds), ds.context)
+        match_results = self.matcher.pipe(docs, return_matches=True, as_tuples=True)
+        new_docs_with_context = more_itertools.map_except(
+            self._filter_tokens, match_results, EmptyTextError
+        )
+        new_docs_with_context = self.nlp.pipe(new_docs_with_context, as_tuples=True)
+        new_docs, context = more_itertools.unzip(new_docs_with_context)
         return DataStream(
-            new_docs, applied_ops=ds.applied_ops + [self], context=ds.context
+            new_docs, applied_ops=ds.applied_ops + [self], context=context
         )
 
     def __getstate__(self):

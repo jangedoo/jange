@@ -32,7 +32,7 @@ class OperationCollection(list):
         if first_only:
             return next((op for op in self if op.name == name))
         else:
-            return [op for op in self if op.name == name]
+            return OperationCollection(op for op in self if op.name == name)
 
     def find_up_to(self, name: str):
         """Returns all operations upto the operation matching the given name
@@ -65,7 +65,7 @@ class OperationCollection(list):
         if found:
             return output
         else:
-            return []
+            return OperationCollection()
 
 
 class DataStream:

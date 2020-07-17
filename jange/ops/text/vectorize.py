@@ -50,6 +50,7 @@ class SklearnBasedVectorizer(Operation, TrainableMixin):
 
     def run(self, ds: DataStream) -> DataStream:
         x = ds.items if ds.is_countable else list(ds.items)
+
         if not isinstance(x[0], str):
             x = list(map(str, x))
 
