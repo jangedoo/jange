@@ -75,7 +75,7 @@ class DimensionReductionOperation(Operation, TrainableMixin):
         )
 
 
-def pca(n_dim: int = 2,):
+def pca(n_dim: int = 2,) -> DimensionReductionOperation:
     """DimensionReductionOperation with PCA
 
     Parameters
@@ -85,13 +85,13 @@ def pca(n_dim: int = 2,):
 
     Returns
     -------
-    DimensioonReductionOperation
+    DimensionReductionOperation
     """
     model = skd.PCA(n_components=n_dim)
     return DimensionReductionOperation(model, name="pca")
 
 
-def tsne(n_dim: int = 2):
+def tsne(n_dim: int = 2) -> DimensionReductionOperation:
     """DimensionReductionOperation with TSNE
 
     Parameters
@@ -101,7 +101,7 @@ def tsne(n_dim: int = 2):
 
     Returns
     -------
-    DimensioonReductionOperation
+    DimensionReductionOperation
     """
     model = skm.TSNE(n_components=n_dim)
     return DimensionReductionOperation(model, name="tsne")
