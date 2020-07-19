@@ -186,10 +186,12 @@ class DataStream:
             self.items = items
             return type(first)
 
-    def apply(self, *ops):
+    def apply(self, *ops, result_collector: dict = None):
         x = self
         for op in ops:
             x = op.run(x)
+            if result_collector:
+                result_collector[op] = x
         return x
 
     def __repr__(self) -> str:

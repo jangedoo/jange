@@ -1,13 +1,12 @@
 """This module contains commonly used dimension reduction algorithms
 """
-from sklearn.base import TransformerMixin
 import sklearn.decomposition as skd
 import sklearn.manifold as skm
 from scipy.sparse import issparse
+from sklearn.base import TransformerMixin
 
-from jange.stream import DataStream
 from jange.base import Operation, TrainableMixin
-
+from jange.stream import DataStream
 
 # some algorithms do not support predicting on new samples
 # and needs retraining all the time. separate those algorithms
