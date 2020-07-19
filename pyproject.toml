@@ -20,6 +20,9 @@ jsonschema = "^3.2.0"
 plotly = "^4.8.2"
 networkx = "^2.4"
 
+[tool.poetry.extras]
+docs = ["sphinx", "sphinx_rtd_theme", "toml"]
+
 [tool.poetry.dev-dependencies]
 pytest = "^5.3.4"
 flake8 = "^3.7.9"
@@ -29,5 +32,4 @@ pytest-cov = "^2.10.0"
 sphinx = "^3.1.2"
 sphinx_rtd_theme = "^0.5.0"
 nbformat = "^5.0.7"
-recommonmark = "^0.6.0"
 rope = "^0.17.0"
