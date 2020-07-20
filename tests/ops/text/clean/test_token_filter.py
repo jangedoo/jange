@@ -151,6 +151,23 @@ def test_remove_words_with_length_less_than():
     assert actual == expected
 
 
+def test_if_every_token_is_removed_then_items_is_discarded():
+    texts = ["this will be deleted", "this will not be deleted"]
+    context = ["a", "b"]
+    ds = DataStream(items=texts, context=context)
+    op = remove_stopwords(["this", "will", "be", "deleted"])
+    output_ds = ds.apply(op)
+
+    actual_texts = list(output_ds.items)
+    actual_context = list(output_ds.context)
+
+    # check that we have only one text in the stream
+    # and the context is "b"
+    assert len(actual_texts) == 1
+    assert len(actual_context) == 1
+    assert actual_context[0] == "b"
+
+
 def test___getstate___does_not_contain_spacy_nlp_or_matcher_object():
     op = TokenFilterOperation(patterns=[])
     assert not any(
