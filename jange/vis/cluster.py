@@ -23,8 +23,8 @@ def visualize(features, clusters):
     else:
         context = range(len(clusters))
 
-    data["cluster"] = clusters
-    data["context"] = context
+    data["cluster"] = list(map(str, clusters))
+    data["context"] = list(map(str, context))
     df = pd.DataFrame(data)
 
     if n_dim == 2:
