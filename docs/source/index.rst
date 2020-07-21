@@ -68,11 +68,8 @@ Visit https://spacy.io/models for available models in various sizes and language
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    tutorial
-   references
-   
-Indices and tables
-==================
+   api/index.rst
