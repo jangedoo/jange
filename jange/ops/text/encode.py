@@ -116,12 +116,12 @@ def tfidf(
     **kwargs
         Keyword parameters that will be passed to the initializer of CountVectorizer
 
-    See https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
-    for details on the paramters and more examples.
-
     Returns
     -------
     SklearnBasedEncodeOperation
+
+    See https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
+    for details on the paramters and more examples.
     """
     model = TfidfVectorizer(
         max_features=max_features,
@@ -173,12 +173,12 @@ def count(
     **kwargs
         Keyword parameters that will be passed to the initializer of CountVectorizer
 
-    See https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
-    for details on the paramters and more examples.
-
     Returns
     -------
     SklearnBasedEncodeOperation
+
+    See https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
+    for details on the paramters and more examples.
     """
     model = CountVectorizer(
         max_features=max_features,
@@ -229,12 +229,12 @@ def one_hot(
     **kwargs
         Keyword parameters that will be passed to the initializer of CountVectorizer
 
-    See https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
-    for details on the paramters and more examples.
-
     Returns
     -------
     SklearnBasedEncodeOperation
+
+    See https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
+    for details on the paramters and more examples.
     """
     model = CountVectorizer(
         max_features=max_features,
