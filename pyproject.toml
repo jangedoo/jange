@@ -19,6 +19,7 @@ scikit-learn = "^0.23.1"
 jsonschema = "^3.2.0"
 plotly = "^4.8.2"
 networkx = "^2.4"
+more_itertools = "^8.4.0"
 
 [tool.poetry.extras]
 docs = ["sphinx", "sphinx_rtd_theme", "toml"]
