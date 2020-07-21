@@ -1,5 +1,7 @@
 from typing import List, Optional, Union
+
 import pandas as pd
+
 from jange.base import DataStream
 
 __all__ = ["DataFrameStream", "CSVDataStream", "from_csv", "from_df"]
@@ -106,9 +108,9 @@ class CSVDataStream(DataFrameStream):
         self.path = path
 
 
-def from_csv(path: str, columns: list) -> DataStream:
-    return CSVDataStream(path=path, columns=columns)
+def from_csv(path: str, columns: list, context_column: str = None) -> DataStream:
+    return CSVDataStream(path=path, columns=columns, context_column=context_column)
 
 
-def from_df(df, columns: list) -> DataStream:
-    return DataFrameStream(df, columns)
+def from_df(df, columns: list, context_column: str = None) -> DataStream:
+    return DataFrameStream(df, columns=columns, context_column=context_column)

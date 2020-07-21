@@ -1,1 +1,1 @@
-from jange.vis import cluster
+from . import cluster

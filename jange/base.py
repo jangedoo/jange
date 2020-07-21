@@ -1,4 +1,5 @@
-from typing import Any, List, Optional, Iterable
+from typing import Any, Iterable, List, Optional
+
 import cytoolz
 import more_itertools
 from scipy.sparse import issparse
@@ -190,7 +191,7 @@ class DataStream:
         x = self
         for op in ops:
             x = op.run(x)
-            if result_collector:
+            if result_collector is not None:
                 result_collector[op] = x
         return x
 

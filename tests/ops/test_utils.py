@@ -3,11 +3,11 @@ from jange import ops
 
 
 def test_disable_training_fn():
-    tfidf1 = ops.text.tfidf()
-    tfidf2 = ops.text.tfidf()
+    tfidf1 = ops.text.encode.tfidf()
+    tfidf2 = ops.text.encode.tfidf()
     tfidf2.should_train = False
 
-    operations = [ops.text.lowercase(), tfidf1, tfidf2]
+    operations = [ops.text.clean.lowercase(), tfidf1, tfidf2]
 
     with ops.utils.disable_training(operations) as training_disabled_ops:
         assert len(operations) == len(training_disabled_ops)

@@ -1,19 +1,20 @@
-from jange.ops.text.clean import token_filter
 import pytest
 import spacy
 from spacy.language import Language
 from spacy.matcher import Matcher
 from spacy.tokens import Doc
-from jange.ops.text import (
+
+from jange.ops.text.clean import (
     TokenFilterOperation,
-    remove_words_with_length_less_than,
-    remove_stopwords,
-    remove_numbers,
-    remove_links,
     remove_emails,
+    remove_links,
+    remove_numbers,
+    remove_stopwords,
+    remove_words_with_length_less_than,
+    token_filter,
 )
-from jange.stream import DataStream
 from jange.ops.utils import cached_spacy_model
+from jange.stream import DataStream
 
 
 def test_accepts_stream_of_texts():

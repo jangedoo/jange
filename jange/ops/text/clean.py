@@ -1,11 +1,14 @@
-from typing import Optional, List, Dict, Tuple
+"""This module contains several text cleaning operations
+"""
+from typing import Dict, List, Optional, Tuple, Union
 
 import more_itertools
-from spacy.tokens import Doc
 from spacy.language import Language
 from spacy.matcher import Matcher
+from spacy.tokens import Doc
 
 from jange.stream import DataStream
+
 from ..base import Operation, SpacyBasedOperation
 
 
@@ -76,76 +79,6 @@ def uppercase(name="uppercase") -> CaseChangeOperation:
     """Helper function to create CaseChangeOperation with mode="upper"
     """
     return CaseChangeOperation(mode="upper", name=name)
-
-
-class ConvertToSpacyDocOperation(SpacyBasedOperation):
-    """Convert a stream of texts to stream of spacy's `Doc`s.
-    Once spacy processes a text, it creates an instance of `Doc`
-    which contains a lot of information like part of speech, named
-    entities and many others. It is usually better to convert texts
-    to spacy's Doc and perform operations on them. For example, spacy
-    has powerful pattern matching features which can be used.
-
-    Any operation that expects a `nlp` object can benefit if you pass
-    a stream of spacy `Doc`s instead of stream of strings. Otherwise those
-    operations will independently convert the raw texts into spacy `Doc`
-    everytime you call them!
-
-    Parameters
-    ----------
-    nlp : Optional[spacy.language.Language]
-        spacy's language model or None. If None then by default
-        `en_core_web_sm` spacy model is loaded
-
-    name : Optional[str]
-        name of this operation
-
-    Example
-    -------
-    >>> ds = DataStream(["this is text 1", "this is text 2"])
-    >>> op = ConvertToSpacyDocOperation(nlp=nlp)
-    >>> ds.apply(op)
-
-    Attributes
-    ---------
-    nlp : spacy.language.Language
-        spacy's language model
-
-    name : str
-        name of this operation
-    """
-
-    def __init__(
-        self,
-        nlp: Optional[Language] = None,
-        name: Optional[str] = "convert_to_spacy_doc",
-    ) -> None:
-        super().__init__(nlp, name=name)
-
-    def run(self, ds: DataStream) -> DataStream:
-        docs = self.get_docs(ds)
-        return DataStream(docs, applied_ops=ds.applied_ops + [self], context=ds.context)
-
-
-def convert_to_spacy_doc(
-    nlp: Optional[Language] = None, name: str = "convert_to_spacy_doc"
-) -> ConvertToSpacyDocOperation:
-    """Helper function to return ConvertToSpacyDocOperation
-
-    Parameters
-    ----------
-    nlp : Optional[spacy.language.Language]
-        spacy's language model or None. If None then by default
-        `en_core_web_sm` spacy model is loaded
-
-    name : Optional[str]
-        name of this operation
-
-    Returns
-    -------
-    out : ConvertToSpacyDocOperation
-    """
-    return ConvertToSpacyDocOperation(nlp=nlp, name=name)
 
 
 class LemmatizeOperation(SpacyBasedOperation):
@@ -310,7 +243,7 @@ class TokenFilterOperation(SpacyBasedOperation):
         if self.keep_matching_tokens:
             tokens_to_discard = [t.i for t in doc if t.i not in matching_token_ids]
         # if we have to discard all tokens in the document
-        # then return None
+        # then throw an exception
         if len(tokens_to_discard) == len(doc):
             raise EmptyTextError
         else:
@@ -386,8 +319,56 @@ def token_filter(
     )
 
 
+def filter_pos(
+    pos_tags: Union[str, List[str]],
+    keep_matching_tokens: bool = False,
+    nlp: Optional[Language] = None,
+    name: Optional[str] = "filter_pos",
+) -> TokenFilterOperation:
+    """TokenFilterOperation to filter tokens based on Part of Speech
+
+    Parameters
+    ----------
+    pos_tags : Union[str, List[str]]
+        a single POS tag or a list of POS tags to search for.
+        See https://spacy.io/api/annotation#pos-tagging for more details on
+        what tags can be used. These depend on the language model used.
+
+    keep_matching_tokens : bool
+        if true then tokens having the given part of speech are kept and
+        others are discarded from the text. Otherwise, tokens not having
+        the given part of speech tags are kept
+
+    nlp : Optional[spacy.language.Language]
+        spacy's language model or None. If None then by default
+        `en_core_web_sm` spacy model is loaded
+
+    name : Optional[str]
+        name of this operation
+
+    Returns
+    -------
+    TokenFilterOperation
+
+    Example
+    -------
+    >>> ds = stream.DataStream(["Python is a programming language"])
+    >>> print(list(ds.apply(ops.text.filter_pos("NOUN", keep_matching_tokens=True))))
+    [programming language]
+
+    """
+    patterns = []
+    if not isinstance(pos_tags, (list, tuple)):
+        pos_tags = [pos_tags]
+    for tag in pos_tags:
+        patterns.append([{"POS": tag}])
+    return TokenFilterOperation(
+        patterns, nlp=nlp, keep_matching_tokens=keep_matching_tokens, name=name
+    )
+
+
 def remove_stopwords(
-    words: List[str],
+    words: List[str] = None,
     nlp: Optional[Language] = None,
     name: Optional[str] = "remove_stopwords",
 ) -> TokenFilterOperation:
@@ -408,10 +389,22 @@ def remove_stopwords(
     Returns
     -------
     TokenFilterOperation
+
+    Example
+    -------
+    >>> ds = stream.DataStream(["Python is a programming language"])
+    >>> print(list(ds.apply(ops.text.remove_stopwords())))
+    [Python programming language]
+    >>> print(list(ds.apply(ops.text.remove_stopwords(words=["programming]))))
+    [Python is a language]
     """
     patterns = []
-    for word in words:
-        patterns.append([{"LOWER": word.lower()}])
+    if words:
+        for word in words:
+            patterns.append([{"LOWER": word.lower()}])
+    else:
+        patterns.append([{"IS_STOP": True}])
+
     return TokenFilterOperation(
         patterns, nlp=nlp, keep_matching_tokens=False, name=name
     )

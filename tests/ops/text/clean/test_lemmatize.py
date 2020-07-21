@@ -1,6 +1,7 @@
 import pytest
 import spacy
-from jange.ops.text import LemmatizeOperation, lemmatize
+
+from jange.ops.text.clean import LemmatizeOperation, lemmatize
 from jange.stream import DataStream
 
 

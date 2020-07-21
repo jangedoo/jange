@@ -1,5 +1,6 @@
 import pytest
-from jange.ops.text import CaseChangeOperation, uppercase, lowercase
+
+from jange.ops.text.clean import CaseChangeOperation, lowercase, uppercase
 from jange.stream import DataStream
 
 
