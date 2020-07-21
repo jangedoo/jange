@@ -1,6 +1,6 @@
+import networkx as nx
 from sklearn import neighbors as sknn
 
-import networkx as nx
 from jange import base, stream
 
 
@@ -17,7 +17,7 @@ class SimilarPairOperation(base.Operation, base.TrainableMixin):
         minimun similarity threshold that each should pair have to be considered as
         being similar
 
-    model : 
+    model :
         any model from sklearn.neighbors package. default `sklearn.neighbors.NearestNeighbors`
 
     name : str
