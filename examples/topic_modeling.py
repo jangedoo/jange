@@ -1,21 +1,23 @@
-# %% Load data
-from sklearn.datasets import fetch_20newsgroups
-from jange import ops, stream, apps
+# %% Load imports
+from jange import apps, ops, stream
 
-# %%
-data = fetch_20newsgroups(shuffle=False, remove=("headers", "footers", "quotes"))
+# %% Load sample data
 
-# %%
-n = 1000
-texts = data["data"][:n]
+ds = stream.from_csv(
+    "https://raw.githubusercontent.com/jangedoo/jange/master/dataset/bbc.csv",
+    columns="news",
+    context_column="news",
+)
+print(ds)
 
-# %% Print first few documents and their topics
+# %% Run topic modeling
 
-vectorize_op = ops.text.tfidf(max_features=1000, stop_words="english")
 cleaning_ops = [
-    ops.text.token_filter([[{"POS": "NOUN"}]], keep_matching_tokens=True),
+    ops.text.clean.filter_pos("NOUN", keep_matching_tokens=True),
+    ops.text.clean.lemmatize(),
 ]
-ds = stream.DataStream(texts, context=texts)
+
+vectorize_op = ops.text.encode.tfidf(max_features=5000, stop_words="english")
 topics_ds = apps.topic_model(
     ds,
     vectorize_op=vectorize_op,
@@ -25,10 +27,12 @@ topics_ds = apps.topic_model(
 )
 
 # %%
-for topic, text in zip(topics_ds, topics_ds.context):
-    print(text[:400])
+for i, (topic, text) in enumerate(zip(topics_ds, topics_ds.context)):
+    print(text[:100])
     print(topic)
     print("\n\n")
+    if i > 100:
+        break
 
 
 # %%
