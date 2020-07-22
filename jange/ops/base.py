@@ -44,7 +44,11 @@ class SpacyBasedOperation(Operation):
             A datastream containing an iterable of spacy's `Doc` objects
         """
         if ds.item_type != Doc:
-            docs_with_context = self.nlp.pipe(zip(ds, ds.context), as_tuples=True)
+            docs_with_context = self.nlp.pipe(
+                zip(ds, ds.context),
+                as_tuples=True,
+                n_process=config.ALLOCATED_PROCESSOR_FOR_SPACY,
+            )
             new_docs, context = more_itertools.unzip(docs_with_context)
             return DataStream(
                 items=new_docs, applied_ops=ds.applied_ops, context=context
