@@ -63,7 +63,7 @@ class SklearnBasedEncodeOperation(Operation, TrainableMixin):
         return DataStream(vectors, ds.applied_ops + [self], context=context)
 
     def __repr__(self) -> str:
-        return f"SklearnBasedVectorizer(model={self.model}, name={self.name}"
+        return f"SklearnBasedEncodeOperation(model={self.model}, name={self.name}"
 
 
 def tfidf(
