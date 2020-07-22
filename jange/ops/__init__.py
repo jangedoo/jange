@@ -5,5 +5,6 @@ from jange.ops import neighbors  # noqa:
 from jange.ops import text  # noqa:
 from jange.ops import topic  # noqa:
 from jange.ops import utils  # noqa:
+from jange.ops import stream
 
-__all__ = ["base", "cluster", "dim", "neighbors", "text", "topic", "utils"]
+__all__ = ["base", "cluster", "dim", "neighbors", "stream", "text", "topic", "utils"]
