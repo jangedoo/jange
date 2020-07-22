@@ -7,4 +7,5 @@
     "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
     "autoDocstring.docstringFormat": "numpy",
+    "restructuredtext.confPath": "${workspaceFolder}\\docs\\source",
 }
