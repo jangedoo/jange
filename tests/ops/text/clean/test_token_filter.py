@@ -2,7 +2,6 @@ import pytest
 import spacy
 from spacy.language import Language
 from spacy.matcher import Matcher
-from spacy.tokens import Doc
 
 from jange.ops.text.clean import (
     TokenFilterOperation,
@@ -23,7 +22,7 @@ def test_accepts_stream_of_texts():
     ds = DataStream(["this is a string data stream"])
 
     output = list(ds.apply(op))
-    assert isinstance(output[0], Doc)
+    assert isinstance(output[0], str)
 
 
 def test_accepts_stream_of_spacy_docs():
@@ -33,7 +32,7 @@ def test_accepts_stream_of_spacy_docs():
     ds = DataStream(nlp.pipe(["this is a spacy doc data stream"]))
 
     output = list(ds.apply(op))
-    assert isinstance(output[0], Doc)
+    assert isinstance(output[0], str)
 
 
 def test_uses_passed_nlp_object():

@@ -43,9 +43,9 @@ class DocumentEmbeddingOperation(SpacyBasedOperation):
         super().__init__(nlp=nlp, name=name)
 
     def run(self, ds: DataStream) -> DataStream:
-        docs = self.get_docs(ds)
+        docs_ds = self.get_docs_stream(ds)
         vecs = []
-        for d in docs:
+        for d in docs_ds:
             if d.has_vector:
                 vecs.append(d.vector)
             else:

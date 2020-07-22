@@ -1,7 +1,7 @@
 import pytest
 import spacy
 
-from jange.ops.text.clean import LemmatizeOperation, lemmatize
+from jange.ops.text.clean import lemmatize
 from jange.stream import DataStream
 
 
@@ -22,22 +22,16 @@ def lemmatized(nlp):
 
 def test_lemmatizes_correctly_for_stream_of_texts(texts, lemmatized, nlp):
     ds = DataStream(texts)
-    op = LemmatizeOperation(nlp=nlp)
-    assert list(map(lambda d: d.text, ds.apply(op))) == lemmatized
+    op = lemmatize(nlp=nlp)
+    assert list(ds.apply(op)) == lemmatized
 
 
-def test_temmatizes_correctly_for_stream_of_spacy_docs(texts, lemmatized, nlp):
-    op = LemmatizeOperation(nlp=nlp)
+def test_lemmatizes_correctly_for_stream_of_spacy_docs(texts, lemmatized, nlp):
+    op = lemmatize(nlp=nlp)
     docs = nlp.pipe(texts)
-    ds = DataStream(docs).apply(op)
-    assert list(map(lambda d: d.text, ds)) == lemmatized
+    assert list(DataStream(docs).apply(op)) == lemmatized
 
 
 def test_nlp_object_is_created_is_nothing_is_passed():
-    op = LemmatizeOperation(nlp=None)
+    op = lemmatize(nlp=None)
     assert op.nlp is not None
-
-
-def test_helper_fn_returns_valid_object():
-    op = lemmatize()
-    assert isinstance(op, LemmatizeOperation)

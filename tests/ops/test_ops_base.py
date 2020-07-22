@@ -14,15 +14,8 @@ def test_get_docs_returns_spacy_docs():
     text_docs = DataStream(["this is doc 1", "this is doc 2"])
     spacy_docs = DataStream([nlp.make_doc(d) for d in text_docs])
 
-    assert all((isinstance(d, Doc) for d in op.get_docs(text_docs)))
-    assert all((isinstance(d, Doc) for d in op.get_docs(spacy_docs)))
-
-
-def test_discard_tokens_from_doc():
-    op = SpacyBasedOperation(nlp=nlp)
-    doc = nlp.make_doc("this is text")
-    actual = op.discard_tokens_from_doc(doc, [0, 2])
-    assert str(actual) == "is"
+    assert all((isinstance(d, Doc) for d in op.get_docs_stream(text_docs)))
+    assert all((isinstance(d, Doc) for d in op.get_docs_stream(spacy_docs)))
 
 
 def test___getstate___does_not_contain_spacy_nlp_object():

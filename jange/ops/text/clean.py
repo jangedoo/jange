@@ -81,59 +81,15 @@ def uppercase(name="uppercase") -> CaseChangeOperation:
     return CaseChangeOperation(mode="upper", name=name)
 
 
-class LemmatizeOperation(SpacyBasedOperation):
-    """Perform lemmatization using spacy's language model
-
-    Parameters
-    ----------
-    nlp : Optional[spacy.language.Language]
-        spacy's language model or None. If None then by default
-        `en_core_web_sm` spacy model is loaded
-
-    name : Optional[str]
-        name of this operation
-
-    Example
-    -------
-    >>> nlp = spacy.load("en_core_web_sm")
-    >>> op = LemmatizeOperation(nlp=nlp)
-    >>> ds = DataStream(["oranges are good"])
-    >>> print(list(ds.apply(op))
-    ["orange be good"]
-
-    Attributes
-    ---------
-    nlp : spacy.language.Language
-        spacy's language model
-
-    name : str
-        name of this operation
-    """
-
-    def __init__(
-        self, nlp: Optional[Language] = None, name: Optional[str] = "lemmatize"
-    ) -> None:
-        super().__init__(nlp, name=name)
-
-    def _get_lemmatized_doc(self, doc):
-        lemma_tokens = [t.lemma_ for t in doc]
-        return self.nlp.make_doc(" ".join(lemma_tokens))
-
-    def run(self, ds: DataStream):
-        docs = self.get_docs(ds)
-        items = map(self._get_lemmatized_doc, docs)
-        for _, proc in self.nlp.pipeline:
-            items = proc.pipe(items)
-        return DataStream(
-            applied_ops=ds.applied_ops + [self], items=items, context=ds.context
-        )
-
-    def __repr__(self):
-        return "LemmatizeOperation()"
+def _lemmatize(doc, ctx):
+    lemma_tokens = [t.lemma_ for t in doc]
+    return " ".join(lemma_tokens), ctx
 
 
-def lemmatize(nlp: Optional[Language] = None, name="lemmatize") -> LemmatizeOperation:
-    """Helper function to return LemmatizeOperation
+def lemmatize(nlp: Optional[Language] = None, name="lemmatize") -> SpacyBasedOperation:
+    """Helper function to return SpacyBasedOperation for lemmatizing.
+    This operation returns a DataStream where each item is a string after
+    being lemmatized.
 
     Parameters
     ----------
@@ -146,9 +102,9 @@ def lemmatize(nlp: Optional[Language] = None, name="lemmatize") -> LemmatizeOper
 
     Returns
     -------
-    out : LemmatizeOperation
+    out : SpacyBasedOperation
     """
-    return LemmatizeOperation(nlp, name="lemmatize")
+    return SpacyBasedOperation(nlp=nlp, process_doc_fn=_lemmatize, name=name,)
 
 
 class TokenFilterOperation(SpacyBasedOperation):
@@ -232,6 +188,27 @@ class TokenFilterOperation(SpacyBasedOperation):
 
         return matcher
 
+    def _discard_tokens_from_doc(self, doc: Doc, token_ids: List[int]) -> Doc:
+        """Returns a new document after discarding the tokens
+
+        Parameters
+        ----------
+        doc : spacy.tokens.Doc
+            orignal document
+        token_ids : List[int]
+            a list of index of tokens to discard
+
+        Returns
+        -------
+        out : spacy.tokens.Doc
+            a new document which does not contain the tokens specified
+        """
+        tokens = [t for t in doc if t.i not in token_ids]
+        words = [t.text for t in tokens]
+        spaces = [t.whitespace_ == " " for t in tokens]
+        spaces[-1] = False
+        return Doc(self.nlp.vocab, words=words, spaces=spaces)
+
     def _filter_tokens(self, matcher_output: Tuple[Doc, List[Tuple]]) -> Doc:
         ((doc, matches), context) = matcher_output
         matching_token_ids = []
@@ -247,16 +224,16 @@ class TokenFilterOperation(SpacyBasedOperation):
         if len(tokens_to_discard) == len(doc):
             raise EmptyTextError
         else:
-            return self.discard_tokens_from_doc(doc, tokens_to_discard).text, context
+            return self._discard_tokens_from_doc(doc, tokens_to_discard).text, context
 
     def run(self, ds: DataStream) -> DataStream:
-        docs = zip(self.get_docs(ds), ds.context)
+        docs_ds = self.get_docs_stream(ds)
+        docs = zip(docs_ds, docs_ds.context)
         # match results is a tuple ((doc, matches), context)
         match_results = self.matcher.pipe(docs, return_matches=True, as_tuples=True)
         new_docs_with_context = more_itertools.map_except(
             self._filter_tokens, match_results, EmptyTextError
         )
-        new_docs_with_context = self.nlp.pipe(new_docs_with_context, as_tuples=True)
         new_docs, context = more_itertools.unzip(new_docs_with_context)
         return DataStream(
             new_docs, applied_ops=ds.applied_ops + [self], context=context
