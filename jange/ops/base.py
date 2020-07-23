@@ -11,11 +11,46 @@ from jange.stream import DataStream
 from .utils import cached_spacy_model
 
 
+class SpacyModelPicklerMixin:
+    """Class intented to be inherited by classes that use
+    spacy's model so that the spacy's model is not pickled.
+    Instead only the path to the mode is pickled
+    """
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        model_path = state["nlp"].path
+        state["model_path"] = model_path
+        del state["nlp"]
+        return state
+
+    def __setstate__(self, state: dict):
+        self.__dict__.update(state)
+        nlp = cached_spacy_model(state["model_path"])
+        self.nlp = nlp
+
+
 def _noop_process_doc_fn(doc, ctx):
     return doc, ctx
 
 
-class SpacyBasedOperation(Operation):
+class SpacyBasedOperation(Operation, SpacyModelPicklerMixin):
+    """Base class for operations using spacy's langauge model
+
+    Parameters
+    ----------
+    nlp : Optional[Language]
+        spacy's language model. if None, then model defined in config.DEFAULT_SPACY_MODEL is used
+
+    process_doc_fn : Callable
+        a function that accepts a document and context and returns a tuple <object, context>.
+        Default function is an identity function. This function is called for each document in
+        the stream
+
+    name : str
+        name of this operation
+    """
+
     def __init__(
         self,
         nlp: Optional[Language] = None,
@@ -24,7 +59,6 @@ class SpacyBasedOperation(Operation):
     ) -> None:
         super().__init__(name=name)
         self.nlp = nlp or cached_spacy_model(config.DEFAULT_SPACY_MODEL)
-        self.model_path = self.nlp.path
         self.process_doc = process_doc_fn
 
     def get_docs_stream(self, ds: DataStream) -> DataStream:
@@ -64,13 +98,3 @@ class SpacyBasedOperation(Operation):
         return DataStream(
             items=items, applied_ops=ds.applied_ops + [self], context=context
         )
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        del state["nlp"]
-        return state
-
-    def __setstate__(self, state: dict):
-        self.__dict__.update(state)
-        nlp = cached_spacy_model(state["model_path"])
-        self.nlp = nlp
