@@ -1,7 +1,6 @@
 from jange.base import DataStream, Operation, TrainableMixin
 
 from .models import ClassificationModel, SpacyClassificationModel
-from .result import ClassificationResult
 
 
 class ClassificationOperation(Operation, TrainableMixin):
@@ -14,6 +13,12 @@ class ClassificationOperation(Operation, TrainableMixin):
 
     def run(self, ds: DataStream) -> DataStream:
         if self.should_train:
+            if self._labels:
+                self.model.fit(ds.items, self._labels)
+            else:
+                raise ValueError(
+                    "labels must be provided when should_train property is True"
+                )
             self.model.fit(ds.items, self._labels)
 
         preds = self.model.predict(ds)

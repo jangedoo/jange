@@ -4,6 +4,7 @@ from typing import List
 
 from spacy.util import compounding, minibatch
 
+from jange.ops.base import SpacyModelPicklerMixin
 from .result import ClassificationResult
 
 
@@ -15,7 +16,7 @@ class ClassificationModel:
         raise NotImplementedError()
 
 
-class SpacyClassificationModel(ClassificationModel):
+class SpacyClassificationModel(ClassificationModel, SpacyModelPicklerMixin):
     def __init__(self, nlp):
         self.nlp = nlp
 
