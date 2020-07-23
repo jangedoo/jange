@@ -5,19 +5,50 @@ from typing import List
 from spacy.util import compounding, minibatch
 
 from jange.ops.base import SpacyModelPicklerMixin
+
 from .result import ClassificationResult
 
 
 class ClassificationModel:
+    """Inteface for classes that wrap models from other
+    libraries
+    """
+
     def fit(self, x, y):
+        """Train a model using features `x` and labels `y`
+        """
         raise NotImplementedError()
 
     def predict(self, x) -> List[ClassificationResult]:
+        """Returns predictions for the given input
+
+        Parameters
+        ----------
+        x : Iterable
+            an iterable of inputs
+
+        Returns
+        -------
+        List[ClassificationResult]
+            a list of classification result
+        """
         raise NotImplementedError()
 
 
 class ScikitClassificationModel:
+    """Wrapper class for classification models available in scikit-learn
+
+    Attributes
+    ----------
+    model : Any
+        any scikit-learn model that has fit and predict method
+    """
+
     def __init__(self, model) -> None:
+        if not hasattr(model, "fit"):
+            raise ValueError("model should have fit method to train it")
+        if not hasattr(model, "predict"):
+            raise ValueError("model should have predict function to get predictions")
         self.model = model
 
     def fit(self, x, y):
@@ -59,6 +90,9 @@ class ScikitClassificationModel:
 
 
 class SpacyClassificationModel(ClassificationModel, SpacyModelPicklerMixin):
+    """Wrapper class for training spacy's model for classification
+    """
+
     def __init__(self, nlp):
         self.nlp = nlp
 
@@ -123,7 +157,7 @@ class SpacyClassificationModel(ClassificationModel, SpacyModelPicklerMixin):
 
         # prepare label for training
         labels = self._prepare_labels_for_training(y)
-        train_data = zip(x, labels)
+        train_data = list(zip(x, labels))
 
         pipe_exceptions = ["textcat", "trf_wordpiecer", "trf_tok2vec"]
         other_pipes = [

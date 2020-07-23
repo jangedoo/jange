@@ -12,6 +12,11 @@ from .utils import cached_spacy_model
 
 
 class SpacyModelPicklerMixin:
+    """Class intented to be inherited by classes that use
+    spacy's model so that the spacy's model is not pickled.
+    Instead only the path to the mode is pickled
+    """
+
     def __getstate__(self):
         state = self.__dict__.copy()
         model_path = state["nlp"].path
@@ -30,6 +35,22 @@ def _noop_process_doc_fn(doc, ctx):
 
 
 class SpacyBasedOperation(Operation, SpacyModelPicklerMixin):
+    """Base class for operations using spacy's langauge model
+
+    Parameters
+    ----------
+    nlp : Optional[Language]
+        spacy's language model. if None, then model defined in config.DEFAULT_SPACY_MODEL is used
+
+    process_doc_fn : Callable
+        a function that accepts a document and context and returns a tuple <object, context>.
+        Default function is an identity function. This function is called for each document in
+        the stream
+
+    name : str
+        name of this operation
+    """
+
     def __init__(
         self,
         nlp: Optional[Language] = None,

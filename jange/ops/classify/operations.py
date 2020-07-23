@@ -1,14 +1,18 @@
 import sklearn.linear_model as sklm
+
 from jange.base import DataStream, Operation, TrainableMixin
 
 from .models import (
     ClassificationModel,
-    SpacyClassificationModel,
     ScikitClassificationModel,
+    SpacyClassificationModel,
 )
 
 
 class ClassificationOperation(Operation, TrainableMixin):
+    """Operation to classify inputs into classes or labels.
+    """
+
     def __init__(
         self, model: ClassificationModel, labels: None, name="classification"
     ) -> None:
