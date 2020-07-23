@@ -1,6 +1,11 @@
+import sklearn.linear_model as sklm
 from jange.base import DataStream, Operation, TrainableMixin
 
-from .models import ClassificationModel, SpacyClassificationModel
+from .models import (
+    ClassificationModel,
+    SpacyClassificationModel,
+    ScikitClassificationModel,
+)
 
 
 class ClassificationOperation(Operation, TrainableMixin):
@@ -27,6 +32,22 @@ class ClassificationOperation(Operation, TrainableMixin):
         )
 
 
-def spacy_classifier(nlp, labels, name="spacy_classifier"):
+def spacy_classifier(nlp, labels: list, name="spacy_classifier"):
     model = SpacyClassificationModel(nlp=nlp)
+    return ClassificationOperation(model=model, labels=labels, name=name)
+
+
+def sgd_classifier(labels: list, name="sgd_classifier"):
+    model = ScikitClassificationModel(sklm.SGDClassifier(loss="modified_huber"))
+    return ClassificationOperation(model=model, labels=labels, name=name)
+
+
+def logistic_regresssion_classifier(
+    labels: list, name="logistic_regresssion_classifier"
+):
+    model = ScikitClassificationModel(sklm.LogisticRegression())
+    return ClassificationOperation(model=model, labels=labels, name=name)
+
+
+def sklearn_classifier(model, labels: list, name="sklearn_classifier"):
     return ClassificationOperation(model=model, labels=labels, name=name)

@@ -16,6 +16,48 @@ class ClassificationModel:
         raise NotImplementedError()
 
 
+class ScikitClassificationModel:
+    def __init__(self, model) -> None:
+        self.model = model
+
+    def fit(self, x, y):
+        self.mode.fit(x, y)
+
+    def predict(self, x) -> List[ClassificationResult]:
+        if hasattr(self.model, "predict_proba"):
+            raw_output = self.model.predict_proba(x)
+            label_indices = raw_output.argmax(axis=1)
+            labels, probas, raws = [], [], []
+            for row_number, lbl_idx in enumerate(label_indices):
+                label, proba, raw = self._parse_probabilities(
+                    raw_output, row_number, lbl_idx
+                )
+
+                labels.append(label)
+                probas.append(proba)
+                raws.append(raw)
+        else:
+            labels = self.model.predict(x)
+            probas = [1.0] * len(labels)
+            raws = [[]] * len(labels)
+
+        output = []
+        for label, proba in zip(labels, probas):
+            r = ClassificationResult(label=label, proba=proba, raw=(label, proba))
+            output.append(r)
+
+        return output
+
+    def _parse_probabilities(self, raw_output, row_number, lbl_idx):
+        probabilities = raw_output[row_number]
+
+        label = self.model.classes_[lbl_idx]
+        proba = probabilities[lbl_idx]
+        # probability distribution
+        raw = dict(zip(self.model.classes_, probabilities))
+        return label, proba, raw
+
+
 class SpacyClassificationModel(ClassificationModel, SpacyModelPicklerMixin):
     def __init__(self, nlp):
         self.nlp = nlp
