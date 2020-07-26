@@ -1,10 +1,35 @@
 import networkx as nx
 from sklearn import neighbors as sknn
 
-from jange import base, stream
+from jange import base, ops, stream
 
 
-class SimilarPairOperation(base.Operation, base.TrainableMixin):
+class NearestNeighborsOperation(ops.base.ScikitBasedOperation):
+    def __init__(self, n_neighboors: int = 10, name: str = "similar_pair") -> None:
+        model = sknn.NearestNeighbors(n_neighbors=n_neighboors, metric="cosine")
+        super().__init__(model=model, predict_fn_name="kneighbors", name=name)
+
+    def _predict(self, ds):
+        # nn needs access to full dataset to determine nearest neighbors
+        ctx = list(ds.context)
+        self.bs = len(ctx)
+        for batch, context in self._get_batch(ds, ctx):
+            distances, indices = self.model.kneighbors(batch)
+
+            output = []
+            for dists, indxs in zip(distances, indices):
+                # get contexts for neighbors
+                nbor_ctxs = [context[i] for i in indxs]
+                nbors = [
+                    {"context": c, "distance": d} for c, d in zip(nbor_ctxs, dists)
+                ]
+
+                output.append(nbors)
+
+            yield output, context
+
+
+class SimilarPairOperation(NearestNeighborsOperation):
     """Finds similar pairs
 
     This operation uses nearest neighbors algorithms from sklearn.neighbors package
@@ -34,23 +59,27 @@ class SimilarPairOperation(base.Operation, base.TrainableMixin):
     def __init__(
         self, sim_threshold=0.8, model=None, name: str = "similar_pair"
     ) -> None:
-        super().__init__(name=name)
-        self.sim_threshold = sim_threshold
-        if model:
-            self.model = model
-        else:
-            self.model = sknn.NearestNeighbors(n_neighbors=10, metric="cosine")
 
-    def _get_pairs(self, dists, indices, context):
+        self.sim_threshold = sim_threshold
+        model = sknn.NearestNeighbors(n_neighbors=10, metric="cosine")
+
+        super().__init__(model=model, predict_fn_name="kneighbors", name=name)
+
+    def _get_pairs(self, dist_indices_ds):
         def get_pair_key(id1, id2):
             return f"{id1}_{id2}"
 
+        contexts = list(dist_indices_ds.context)
+        items = list(dist_indices_ds)
+
         is_pair_seen = set()
         pairs = []
-        for ds, idxs in zip(dists, indices):
-            main_id = context[idxs[0]]  # instead of array index, use context
-            for d, i in zip(ds[1:], idxs[1:]):
-                i = context[i]  # instead of array index, use context
+        for i, (data, context) in enumerate(zip(items, contexts)):
+            nbor_distances = [d["distance"] for d in data]
+            nbor_ctxs = [d["context"] for d in data]
+
+            main_id = nbor_ctxs[0]
+            for d, i in zip(nbor_distances[1:], nbor_ctxs[1:]):
                 doc1_id, doc2_id = sorted([main_id, i])
                 pair_key = get_pair_key(doc1_id, doc2_id)
                 sim = 1 - d
@@ -64,12 +93,8 @@ class SimilarPairOperation(base.Operation, base.TrainableMixin):
         return pairs
 
     def run(self, ds: stream.DataStream) -> stream.DataStream:
-        vectors = ds.items
-        if self.should_train:
-            self.model.fit(vectors)
-
-        dists, indices = self.model.kneighbors(vectors)
-        pairs = self._get_pairs(dists, indices, ds.context)
+        dist_indices_ds = super().run(ds)
+        pairs = self._get_pairs(dist_indices_ds)
 
         return stream.DataStream(pairs, applied_ops=ds.applied_ops + [self])
 
