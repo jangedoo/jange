@@ -9,7 +9,7 @@ from spacy.language import Language
 from spacy.tokens import Doc
 
 from jange import config
-from jange.base import Operation, TrainableMixin
+from jange.base import Operation, TrainableMixin, accepts, produces
 from jange.stream import DataStream
 
 from .utils import cached_spacy_model
@@ -38,6 +38,8 @@ def _noop_process_doc_fn(doc, ctx):
     return doc, ctx
 
 
+@accepts(str, Doc)
+@produces(str, Doc)
 class SpacyBasedOperation(Operation, SpacyModelPicklerMixin):
     """Base class for operations using spacy's langauge model
 

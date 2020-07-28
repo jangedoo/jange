@@ -1,3 +1,5 @@
+import functools
+import warnings
 from typing import Any, Iterable, List, Optional
 
 import cytoolz
@@ -202,6 +204,9 @@ class DataStream:
 
 
 class Operation:
+    accepts_types = []
+    produces_types = []
+
     def __init__(self, name: Optional[str] = None) -> None:
         super().__init__()
         name = name or self.__class__.__name__
@@ -214,6 +219,82 @@ class Operation:
         return self.run(ds)
 
 
+class FunctionOperation(Operation):
+    def __init__(self, name: str, fn):
+        super().__init__(name=name if name else fn.__name__)
+        self.fn = fn
+
+    def run(self, ds):
+        return self.fn(ds)
+
+
 class TrainableMixin:
     def __init__(self) -> None:
         self.should_train = True
+
+
+def accepts(*types, strict=False):
+    """Class decorator for specifying what types of items in the DataStream are supported by the Operation class
+    """
+
+    def _accepts(cls: Operation):
+        cls.strict_validation = strict
+        cls.accepts_types = types
+        f = getattr(cls, "run")
+
+        @functools.wraps(f)
+        def wrapper(self, ds: DataStream, *args, **kwargs):
+            item_type = ds.item_type
+            if self.accepts_types and item_type not in self.accepts_types:
+                msg = f"Operation {self} expected DataStream having item_type = any{self.accepts_types} but got {item_type}"
+                if self.strict_validation:
+                    raise Exception(msg)
+                else:
+                    warnings.warn(msg)
+            return f(self, ds, *args, **kwargs)
+
+        cls.run = wrapper
+        return cls
+
+    return _accepts
+
+
+def produces(*types):
+    """Class decorator for specifying what type of item will be in the DataStream that this Operation returns
+    """
+
+    def _produces(cls):
+        cls.produces_types = types
+        return cls
+
+    return _produces
+
+
+def operation(name=None, accepts=(), produces=(), strict=False):
+    """Decorator for returning FunctionOperation from the given function
+
+    Example
+    -------
+    >>> @operation(accepts=str, produces=str)
+    >>> def uppercase_op(ds):
+    >>>     return (text.upper() for text in ds)
+    >>> op = uppercase_op()
+    >>> op.run(stream.DataStream(["hi", "hello"]))
+    """
+
+    def _operation(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            o = FunctionOperation(name=name if name else f.__name__, fn=f)
+            o.strict_validation = strict
+            o.accepts_types = (
+                accepts if isinstance(accepts, (list, tuple)) else [accepts]
+            )
+            o.produces_types = (
+                produces if isinstance(produces, (list, tuple)) else [produces]
+            )
+            return o
+
+        return wrapper
+
+    return _operation
