@@ -5,8 +5,10 @@ from jange import base, ops, stream
 
 
 class NearestNeighborsOperation(ops.base.ScikitBasedOperation):
-    def __init__(self, n_neighboors: int = 10, name: str = "similar_pair") -> None:
-        model = sknn.NearestNeighbors(n_neighbors=n_neighboors, metric="cosine")
+    def __init__(
+        self, n_neighbors: int = 10, metric="cosine", name: str = "nearest_neighbors"
+    ) -> None:
+        model = sknn.NearestNeighbors(n_neighbors=n_neighbors, metric=metric)
         super().__init__(model=model, predict_fn_name="kneighbors", name=name)
 
     def _predict(self, ds):
@@ -21,7 +23,8 @@ class NearestNeighborsOperation(ops.base.ScikitBasedOperation):
                 # get contexts for neighbors
                 nbor_ctxs = [context[i] for i in indxs]
                 nbors = [
-                    {"context": c, "distance": d} for c, d in zip(nbor_ctxs, dists)
+                    {"context": c, "distance": d, "item_idx": i}
+                    for c, d, i in zip(nbor_ctxs, dists, indxs)
                 ]
 
                 output.append(nbors)
@@ -33,7 +36,9 @@ class SimilarPairOperation(NearestNeighborsOperation):
     """Finds similar pairs
 
     This operation uses nearest neighbors algorithms from sklearn.neighbors package
-    to find similar items in a dataset and convert them into pairs. The input data
+    to find similar items in a dataset and convert them into pairs. Unlike nearest
+    neighbors, where you get `n_neighbor` items for each item in the input, similar
+    pairs will only return distinct occurence of any two items. The input data
     stream should contain a numpy array or a scipy sparse matrix.
 
     Attributes
@@ -56,37 +61,53 @@ class SimilarPairOperation(NearestNeighborsOperation):
     >>> similar_pairs = features_ds.apply(features_ds)
     """
 
+    valid_metrics = ["cosine", "euclidean"]
+
     def __init__(
-        self, sim_threshold=0.8, model=None, name: str = "similar_pair"
+        self,
+        sim_threshold=0.8,
+        metric="cosine",
+        n_neighbors=10,
+        name: str = "similar_pair",
     ) -> None:
 
+        if metric not in self.valid_metrics:
+            raise ValueError(
+                f"metric should be one of {self.valid_metrics} but got {metric}"
+            )
         self.sim_threshold = sim_threshold
-        model = sknn.NearestNeighbors(n_neighbors=10, metric="cosine")
+        super().__init__(n_neighbors=n_neighbors, metric=metric, name=name)
 
-        super().__init__(model=model, predict_fn_name="kneighbors", name=name)
+    def _get_similariry_from_distance(self, metric: str, distance: float):
+        if metric == "cosine":
+            return 1 - distance
+        elif metric == "euclidean":
+            return 1 / (1 + distance)
+        else:
+            raise ValueError(f"unknown metric {metric}")
 
     def _get_pairs(self, dist_indices_ds):
         def get_pair_key(id1, id2):
             return f"{id1}_{id2}"
 
-        contexts = list(dist_indices_ds.context)
         items = list(dist_indices_ds)
-
+        context = list(dist_indices_ds.context)
         is_pair_seen = set()
         pairs = []
-        for i, (data, context) in enumerate(zip(items, contexts)):
-            nbor_distances = [d["distance"] for d in data]
-            nbor_ctxs = [d["context"] for d in data]
+        for data in items:
+            nbor_distances, nbor_idxs = zip(
+                *[(d["distance"], d["item_idx"]) for d in data]
+            )
 
-            main_id = nbor_ctxs[0]
-            for d, i in zip(nbor_distances[1:], nbor_ctxs[1:]):
+            main_id = nbor_idxs[0]
+            for d, i in zip(nbor_distances[1:], nbor_idxs[1:]):
                 doc1_id, doc2_id = sorted([main_id, i])
                 pair_key = get_pair_key(doc1_id, doc2_id)
-                sim = 1 - d
+                sim = self._get_similariry_from_distance(self.model.metric, distance=d)
                 if pair_key in is_pair_seen or sim < self.sim_threshold:
                     continue
 
-                pairs.append((doc1_id, doc2_id, sim))
+                pairs.append((context[doc1_id], context[doc2_id], sim))
                 is_pair_seen.add(pair_key)
 
         pairs = sorted(pairs, key=lambda p: p[2], reverse=True)
@@ -96,6 +117,7 @@ class SimilarPairOperation(NearestNeighborsOperation):
         dist_indices_ds = super().run(ds)
         pairs = self._get_pairs(dist_indices_ds)
 
+        # contexts do not make sense anymore
         return stream.DataStream(pairs, applied_ops=ds.applied_ops + [self])
 
 

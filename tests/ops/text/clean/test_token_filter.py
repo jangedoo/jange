@@ -5,11 +5,12 @@ from spacy.matcher import Matcher
 
 from jange.ops.text.clean import (
     TokenFilterOperation,
+    pos_filter,
     remove_emails,
     remove_links,
     remove_numbers,
-    remove_stopwords,
     remove_short_words,
+    remove_stopwords,
     token_filter,
 )
 from jange.ops.utils import cached_spacy_model
@@ -166,6 +167,11 @@ def test_if_every_token_is_removed_then_items_is_discarded():
     assert len(actual_texts) == 1
     assert len(actual_context) == 1
     assert actual_context[0] == "b"
+
+
+def test_filter_pos():
+    ds = DataStream(items=["that is an apple"])
+    assert list(ds.apply(pos_filter("NOUN")).items) == ["that is an"]
 
 
 def test___getstate___does_not_contain_spacy_nlp_or_matcher_object():

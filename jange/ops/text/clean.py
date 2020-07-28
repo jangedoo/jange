@@ -8,7 +8,7 @@ from spacy.language import Language
 from spacy.matcher import Matcher
 from spacy.tokens import Doc
 
-from jange import base, stream, ops
+from jange import base, ops, stream
 
 
 class EmptyTextError(Exception):
@@ -301,7 +301,7 @@ def token_filter(
     )
 
 
-def filter_pos(
+def pos_filter(
     pos_tags: Union[str, List[str]],
     keep_matching_tokens: bool = False,
     nlp: Optional[Language] = None,
