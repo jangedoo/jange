@@ -9,7 +9,7 @@ from jange.ops.text.clean import (
     remove_links,
     remove_numbers,
     remove_stopwords,
-    remove_words_with_length_less_than,
+    remove_short_words,
     token_filter,
 )
 from jange.ops.utils import cached_spacy_model
@@ -141,12 +141,12 @@ def test_remove_emails():
     assert actual == expected
 
 
-def test_remove_words_with_length_less_than():
+def test_remove_short_words():
     texts = ["this is a first text", "what was that"]
     expected = ["this first text", "what that"]
 
     ds = DataStream(texts)
-    actual = list(map(str, ds.apply(remove_words_with_length_less_than(length=4))))
+    actual = list(map(str, ds.apply(remove_short_words(length=4))))
 
     assert actual == expected
 

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 import sklearn.cluster as skcluster
 
+from jange import stream
 from jange.ops import cluster
 
 
@@ -28,7 +29,7 @@ def test_calls_appropriate_underlying_methods_for_training_and_prediction(
     model_class, should_train
 ):
     model = MagicMock(spec=model_class)
-    ds = cluster.DataStream([[0, 1, 2], [3, 4, 5]])
+    ds = stream.DataStream([[0, 1, 2], [3, 4, 5]])
 
     op = cluster.ClusterOperation(model=model)
     op.should_train = should_train

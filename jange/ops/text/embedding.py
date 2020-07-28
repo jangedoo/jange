@@ -3,7 +3,6 @@ language model.
 """
 from typing import Optional
 
-import numpy as np
 from spacy.language import Language
 
 from jange.base import DataStream

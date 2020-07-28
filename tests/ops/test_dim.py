@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from jange.ops import dim
+from jange.ops import dim, stream
 
 
 def test_pca_returns_proper_operation():
@@ -33,7 +33,7 @@ def test_calls_appropriate_underlying_methods_for_training_and_prediction(
 ):
     model = MagicMock(spec=model_class)
     context = ["context1", "context2"]
-    ds = dim.DataStream([[0, 1, 2], [3, 4, 5]], context=context)
+    ds = stream.DataStream([[0, 1, 2], [3, 4, 5]], context=context)
 
     op = dim.DimensionReductionOperation(model=model)
     op.should_train = should_train
