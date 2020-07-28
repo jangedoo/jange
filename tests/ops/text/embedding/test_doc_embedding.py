@@ -7,6 +7,8 @@ def test_returns_a_stream_with_doc_vectors():
     ds = stream.DataStream(["this is", "another", "sentence"])
 
     vector_ds = ds.apply(ops.text.embedding.doc_embedding())
-    assert vector_ds.total_items == ds.total_items
-    assert vector_ds.context is not None
-    assert isinstance(vector_ds.items, np.ndarray)
+    vectors = list(vector_ds)
+    context = list(vector_ds.context)
+    assert len(vectors) == ds.total_items
+    assert len(context) == len(vectors)
+    assert all(isinstance(v, np.ndarray) for v in vectors)

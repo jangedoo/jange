@@ -1,11 +1,15 @@
+import itertools
 from typing import Callable, Optional
 
+import cytoolz
 import more_itertools
+import numpy as np
+import scipy.sparse as sparse
 from spacy.language import Language
 from spacy.tokens import Doc
 
 from jange import config
-from jange.base import Operation
+from jange.base import Operation, TrainableMixin, accepts, produces
 from jange.stream import DataStream
 
 from .utils import cached_spacy_model
@@ -34,6 +38,8 @@ def _noop_process_doc_fn(doc, ctx):
     return doc, ctx
 
 
+@accepts(str, Doc)
+@produces(str, Doc)
 class SpacyBasedOperation(Operation, SpacyModelPicklerMixin):
     """Base class for operations using spacy's langauge model
 
@@ -97,4 +103,129 @@ class SpacyBasedOperation(Operation, SpacyModelPicklerMixin):
         items, context = more_itertools.unzip(processed_docs)
         return DataStream(
             items=items, applied_ops=ds.applied_ops + [self], context=context
+        )
+
+
+class ScikitBasedOperation(Operation, TrainableMixin):
+    """Base class for operations using scikit-learn's Estimators
+
+    Attributes
+    ----------
+    model : any sklearn Estimator
+
+    predict_fn_name : str
+        name of function or attribute in the model to get predictions.
+        Usually this is transform, predict or kneighbors. For models
+        that do not support predicting on new dataset, this should be
+        the name of attribute that holds the data. E.g. for clustering
+        models like DBSCAN, AgglomerativeClustering it would be `labels_`
+        or for dimension reduction approaches like TSNE, SpectralEmbedding
+        it would be `embedding_`
+
+    Example
+    -------
+    >>> import sklearn.linear_model as sklm
+    >>> import sklearn.decomposition as skdecomp
+    >>> import sklearn.cluster as skcluster
+    >>> op1 = ScikitBasedOperation(sklm.SGDClassifier(), predict_fn_name="predict")
+    >>> op2 = ScikitBasedOperation(skdecomp.PCA(15), predict_fn_name="transform")
+    >>> op3 = ScikitBasedOperation(skcluster.DBSCAN(), predict_fn_name="labels_")
+    """
+
+    def __init__(
+        self,
+        model,
+        predict_fn_name: str,
+        batch_size: int = 1000,
+        name: str = "sklearn_op",
+    ):
+        super().__init__(name=name)
+        self.model = model
+        self.predict_fn_name = predict_fn_name
+        self.bs = batch_size
+
+    @property
+    def supports_batch_training(self):
+        return hasattr(self.model, "partial_fit")
+
+    @property
+    def can_predict_on_new(self):
+        """Returns whether sklearn's estimator can predict on unseen data
+
+        It checks whether the given `predict_fn_name` is present on the model
+        and if it exists then checks whether it is a function or not.
+
+        Note
+        ----
+        Estimators not supporting unseen data prediction will populate some attribute
+        like `labels_` or `embeddings_` only after the model has been trained..
+
+        Returns
+        -------
+        bool
+            If the estimator can predict on new dataset
+        """
+        has_attrib = hasattr(self.model, self.predict_fn_name)
+        if has_attrib:
+            attrib = getattr(self.model, self.predict_fn_name)
+            # if this is a function then it predicts on new input
+            return callable(attrib)
+        return False
+
+    def _get_batch(self, x, y=None):
+        y_x_pairs = zip(y, x) if y else enumerate(x)
+        for batch in cytoolz.partition_all(self.bs, y_x_pairs):
+            batch_y, batch_x = more_itertools.unzip(batch)
+            X, Y = list(batch_x), list(batch_y)
+            if sparse.issparse(X[0]):
+                X = sparse.vstack(X)
+            elif isinstance(X[0], np.ndarray):
+                X = np.vstack(X)
+            yield X, Y
+
+    def _train(self, ds, labels):
+        # if stream is finite then train normally
+        if ds.is_countable:
+            self.model.fit(ds.items, labels)
+        else:
+            if self.supports_batch_training:
+                for x, y in self._get_batch(ds, labels):
+                    self.model.partial_fit(x, y)
+            else:
+                self.model.fit(list(ds), labels)
+
+    def _predict(self, ds):
+        # if this cannot predict on new then return the value
+        # stored in some attribute
+        if not self.can_predict_on_new:
+            preds = getattr(self.model, self.predict_fn_name)
+            yield preds, ds.context
+        else:
+            predict_fn = getattr(self.model, self.predict_fn_name)
+            for batch, context in self._get_batch(ds, ds.context):
+                preds = predict_fn(batch)
+                yield preds, context
+
+    def run(self, ds, labels=None):
+        if not self.can_predict_on_new:
+            self.should_train = True
+
+        if self.should_train:
+            if ds.is_countable:
+                train_ds = ds
+                pred_ds = ds
+            else:
+                train_items, pred_items = itertools.tee(ds, 2)
+                train_context, pred_context = itertools.tee(ds.context, 2)
+                train_ds = DataStream(train_items, context=train_context)
+                pred_ds = DataStream(pred_items, context=pred_context)
+
+            self._train(train_ds, labels)
+        else:
+            pred_ds = ds
+        preds, context = more_itertools.unzip(self._predict(pred_ds))
+        preds = itertools.chain.from_iterable(preds)
+        context = itertools.chain.from_iterable(context)
+        return DataStream(
+            items=preds, context=context, applied_ops=ds.applied_ops + [self]
         )

@@ -1,5 +1,6 @@
 """This module contains several text cleaning operations
 """
+
 from typing import Dict, List, Optional, Tuple, Union
 
 import more_itertools
@@ -7,16 +8,16 @@ from spacy.language import Language
 from spacy.matcher import Matcher
 from spacy.tokens import Doc
 
-from jange.stream import DataStream
-
-from ..base import Operation, SpacyBasedOperation
+from jange import base, ops, stream
 
 
 class EmptyTextError(Exception):
     pass
 
 
-class CaseChangeOperation(Operation):
+@base.accepts(str, strict=True)
+@base.produces(str)
+class CaseChangeOperation(ops.base.Operation):
     """Operation for changing case of the texts.
 
     Parameters
@@ -53,7 +54,7 @@ class CaseChangeOperation(Operation):
             )
         self.mode = mode
 
-    def run(self, ds: DataStream):
+    def run(self, ds: stream.DataStream):
         if self.mode == "upper":
             fn = str.upper
         elif self.mode == "capitalize":
@@ -61,7 +62,7 @@ class CaseChangeOperation(Operation):
         else:
             fn = str.lower
         items = map(fn, ds)
-        return DataStream(
+        return stream.DataStream(
             applied_ops=ds.applied_ops + [self], items=items, context=ds.context
         )
 
@@ -86,9 +87,11 @@ def _lemmatize(doc, ctx):
     return " ".join(lemma_tokens), ctx
 
 
-def lemmatize(nlp: Optional[Language] = None, name="lemmatize") -> SpacyBasedOperation:
+def lemmatize(
+    nlp: Optional[Language] = None, name="lemmatize"
+) -> ops.base.SpacyBasedOperation:
     """Helper function to return SpacyBasedOperation for lemmatizing.
-    This operation returns a DataStream where each item is a string after
+    This operation returns a stream.DataStream where each item is a string after
     being lemmatized.
 
     Parameters
@@ -104,10 +107,12 @@ def lemmatize(nlp: Optional[Language] = None, name="lemmatize") -> SpacyBasedOpe
     -------
     out : SpacyBasedOperation
     """
-    return SpacyBasedOperation(nlp=nlp, process_doc_fn=_lemmatize, name=name,)
+    return ops.base.SpacyBasedOperation(nlp=nlp, process_doc_fn=_lemmatize, name=name,)
 
 
-class TokenFilterOperation(SpacyBasedOperation):
+@base.accepts(str)
+@base.produces(str)
+class TokenFilterOperation(ops.base.SpacyBasedOperation):
     """Operation for filtering individual tokens.
 
     Spacy's token pattern matching is used for matching various
@@ -144,7 +149,7 @@ class TokenFilterOperation(SpacyBasedOperation):
     ]
     >>> # define the token filter operation to match the patterns and discard them
     >>> op = TokenFilterOperation(patterns=patterns, nlp=nlp, keep_matching_tokens=False)
-    >>> ds = DataStream(["that is an orange"])
+    >>> ds = stream.DataStream(["that is an orange"])
     >>> print(list(ds.apply(op))
     ["that is orange"]
 
@@ -226,7 +231,7 @@ class TokenFilterOperation(SpacyBasedOperation):
         else:
             return self._discard_tokens_from_doc(doc, tokens_to_discard).text, context
 
-    def run(self, ds: DataStream) -> DataStream:
+    def run(self, ds: stream.DataStream) -> stream.DataStream:
         docs_ds = self.get_docs_stream(ds)
         docs = zip(docs_ds, docs_ds.context)
         # match results is a tuple ((doc, matches), context)
@@ -235,7 +240,7 @@ class TokenFilterOperation(SpacyBasedOperation):
             self._filter_tokens, match_results, EmptyTextError
         )
         new_docs, context = more_itertools.unzip(new_docs_with_context)
-        return DataStream(
+        return stream.DataStream(
             new_docs, applied_ops=ds.applied_ops + [self], context=context
         )
 
@@ -296,7 +301,7 @@ def token_filter(
     )
 
 
-def filter_pos(
+def pos_filter(
     pos_tags: Union[str, List[str]],
     keep_matching_tokens: bool = False,
     nlp: Optional[Language] = None,
@@ -459,10 +464,10 @@ def remove_emails(
     )
 
 
-def remove_words_with_length_less_than(
+def remove_short_words(
     length: int,
     nlp: Optional[Language] = None,
-    name: Optional[str] = "remove_words_with_length_less_than",
+    name: Optional[str] = "remove_short_words",
 ) -> TokenFilterOperation:
     """TokenFilterOperation to remove tokens that have fewer characters
     than specified

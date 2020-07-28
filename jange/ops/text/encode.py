@@ -5,65 +5,7 @@ from typing import Optional, Tuple, Union
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
-from jange.base import Operation, TrainableMixin
-from jange.stream import DataStream
-
-
-class SklearnBasedEncodeOperation(Operation, TrainableMixin):
-    """Vectorize texts based on algorithms available in scikit-learn.
-    TfidfVectorizer, CountVectorizer and HashingVectorizer can be used
-    as the underlying model.
-
-    Paramters
-    ----------
-    model : Union[TfidfVectorizer, CountVectorizer, HashingVectorizer]
-        any of TfidfVectorizer, CountVectorizer, HashingVectorizer instance
-
-    name : str
-        name of this operation
-
-    Example
-    -------
-    >>> ds = DataStream(["this is text1", "this is text2"])
-    >>> op = SklearnBasedEncodeOperation(model=TfidfVectorizer(max_features=1000), name='tfidf')
-    >>> ds.apply(op)
-
-    Attributes
-    ----------
-    model : Union[TfidfVectorizer, CountVectorizer, HashingVectorizer]
-        underlying model for vectorizing texts
-
-    name : str
-        name of this operation
-    """
-
-    def __init__(
-        self,
-        model: Union[TfidfVectorizer, CountVectorizer],
-        name: str = "sklearn_vectorizer",
-    ) -> None:
-        super().__init__(name=name)
-        self.model = model
-
-    def run(self, ds: DataStream) -> DataStream:
-        if ds.is_countable:
-            x = ds.items
-            context = ds.context
-        else:
-            x = list(ds.items)
-            context = list(ds.context)
-
-        if not isinstance(x[0], str):
-            x = list(map(str, x))
-
-        if self.should_train:
-            self.model.fit(x)
-
-        vectors = self.model.transform(x)
-        return DataStream(vectors, ds.applied_ops + [self], context=context)
-
-    def __repr__(self) -> str:
-        return f"SklearnBasedEncodeOperation(model={self.model}, name={self.name}"
+from jange.ops.base import ScikitBasedOperation
 
 
 def tfidf(
@@ -75,7 +17,7 @@ def tfidf(
     use_idf: bool = True,
     name: str = "tfidf",
     **kwargs,
-) -> SklearnBasedEncodeOperation:
+) -> ScikitBasedOperation:
     """Returns tfidf based feature vector extraction.
     Uses sklearn's TfidfVectorizer as underlying model.
 
@@ -132,7 +74,7 @@ def tfidf(
         use_idf=use_idf,
         **kwargs,
     )
-    return SklearnBasedEncodeOperation(model=model, name=name)
+    return ScikitBasedOperation(model=model, predict_fn_name="transform", name=name)
 
 
 def count(
@@ -142,7 +84,7 @@ def count(
     ngram_range: Tuple[int, int] = (1, 1),
     name: Optional[str] = "count",
     **kwargs,
-) -> SklearnBasedEncodeOperation:
+) -> ScikitBasedOperation:
     """Returns count based feature vector extraction.
     Uses sklearn's CountVectorizer as underlying model.
 
@@ -187,7 +129,7 @@ def count(
         ngram_range=ngram_range,
         **kwargs,
     )
-    return SklearnBasedEncodeOperation(model=model, name=name)
+    return ScikitBasedOperation(model=model, predict_fn_name="transform", name=name)
 
 
 def one_hot(
@@ -197,7 +139,7 @@ def one_hot(
     ngram_range: Tuple[int, int] = (1, 1),
     name: Optional[str] = "one_hot",
     **kwargs,
-) -> SklearnBasedEncodeOperation:
+) -> ScikitBasedOperation:
     """Returns operation for performing one hot encoding of texts.
 
     Uses sklearn.feature_extraction.text.CountVectorizer class with binary=True mode
@@ -244,4 +186,4 @@ def one_hot(
         binary=True,
         **kwargs,
     )
-    return SklearnBasedEncodeOperation(model=model, name=name)
+    return ScikitBasedOperation(model=model, predict_fn_name="transform", name=name)

@@ -3,7 +3,6 @@ language model.
 """
 from typing import Optional
 
-import numpy as np
 from spacy.language import Language
 
 from jange.base import DataStream
@@ -44,16 +43,7 @@ class DocumentEmbeddingOperation(SpacyBasedOperation):
 
     def run(self, ds: DataStream) -> DataStream:
         docs_ds = self.get_docs_stream(ds)
-        vecs = []
-        for d in docs_ds:
-            if d.has_vector:
-                vecs.append(d.vector)
-            else:
-                raise Exception(
-                    "A spacy model with `vectors` capability is needed for extracting document vectors"
-                )
-
-        vecs = np.array(vecs)
+        vecs = (d.vector for d in docs_ds)
         return DataStream(
             items=vecs, applied_ops=ds.applied_ops + [self], context=ds.context
         )

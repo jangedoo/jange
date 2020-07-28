@@ -2,11 +2,9 @@
 """
 import sklearn.decomposition as skd
 import sklearn.manifold as skm
-from scipy.sparse import issparse
 from sklearn.base import TransformerMixin
 
-from jange.base import Operation, TrainableMixin
-from jange.stream import DataStream
+from jange.ops.base import ScikitBasedOperation
 
 # some algorithms do not support predicting on new samples
 # and needs retraining all the time. separate those algorithms
@@ -33,7 +31,7 @@ SUPPORTED_CLASSES = (
 )
 
 
-class DimensionReductionOperation(Operation, TrainableMixin):
+class DimensionReductionOperation(ScikitBasedOperation):
     """Operation for reducing dimension of a multi-dimensional array.
     This operation is primarily used for reducing large feature space
     to 2D or 3D for easy visualization.
@@ -49,30 +47,17 @@ class DimensionReductionOperation(Operation, TrainableMixin):
     """
 
     def __init__(self, model: TransformerMixin, name: str = "dim_reduction") -> None:
-        super().__init__(name=name)
+
         if not any(isinstance(model, cls) for cls in SUPPORTED_CLASSES):
             raise ValueError(
                 f"model should be one of {SUPPORTED_CLASSES} but got {type(model)}"
             )
-        self.model: TransformerMixin = model
-
-    def run(self, ds: DataStream) -> DataStream:
-        features = ds.items
-        if issparse(features):
-            features = features.toarray()
-
-        # if model has no transform method, then we fit the model
-        # regardless of the state of `should_train` flag
-        if not hasattr(self.model, "transform"):
-            reduced_features = self.model.fit_transform(features)
-        elif self.should_train:
-            reduced_features = self.model.fit_transform(features)
-        else:
-            reduced_features = self.model.transform(features)
-
-        return DataStream(
-            reduced_features, applied_ops=ds.applied_ops + [self], context=ds.context
+        predict_fn_name = (
+            "transform"
+            if any(isinstance(model, c) for c in ALGORITHMS_SUPPORTING_NEW_INFERENCE)
+            else "embedding_"
         )
+        super().__init__(model=model, predict_fn_name=predict_fn_name, name=name)
 
 
 def pca(n_dim: int = 2,) -> DimensionReductionOperation:

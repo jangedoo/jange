@@ -7,7 +7,7 @@ def topic_model(
     texts: Union[stream.DataStream, Iterable],
     num_topics: int = 30,
     max_words_per_topic: int = 10,
-    vectorize_op: ops.text.encode.SklearnBasedEncodeOperation = None,
+    vectorize_op: ops.base.ScikitBasedOperation = None,
     cleaning_ops: Optional[List[base.Operation]] = None,
     topic_modeling_op: Optional[ops.topic.TopicModelingOperation] = None,
 ):
@@ -15,11 +15,9 @@ def topic_model(
     if cleaning_ops is None:
         cleaning_ops = []
 
-    if vectorize_op and not isinstance(
-        vectorize_op, ops.text.encode.SklearnBasedEncodeOperation
-    ):
+    if vectorize_op and not isinstance(vectorize_op, ops.base.ScikitBasedOperation):
         raise ValueError(
-            "vectorize_op should be of type ops.text.encode.SklearnBasedEncodeOperation"
+            "vectorize_op should be of type ops.base.ScikitBasedOperation"
             f" but got {type(vectorize_op)}"
         )
     elif vectorize_op is None:
