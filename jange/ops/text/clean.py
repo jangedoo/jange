@@ -459,10 +459,10 @@ def remove_emails(
     )
 
 
-def remove_words_with_length_less_than(
+def remove_short_words(
     length: int,
     nlp: Optional[Language] = None,
-    name: Optional[str] = "remove_words_with_length_less_than",
+    name: Optional[str] = "remove_short_words",
 ) -> TokenFilterOperation:
     """TokenFilterOperation to remove tokens that have fewer characters
     than specified
