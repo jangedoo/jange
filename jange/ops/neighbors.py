@@ -14,8 +14,8 @@ class NearestNeighborsOperation(ops.base.ScikitBasedOperation):
     def _predict(self, ds):
         # nn needs access to full dataset to determine nearest neighbors
         ctx = list(ds.context)
-        self.bs = len(ctx)
-        for batch, context in self._get_batch(ds, ctx):
+        bs = len(ctx)
+        for batch, context in self._get_batch(bs, ds, ctx):
             distances, indices = self.model.kneighbors(batch)
 
             output = []

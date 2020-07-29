@@ -172,9 +172,9 @@ class ScikitBasedOperation(Operation, TrainableMixin):
             return callable(attrib)
         return False
 
-    def _get_batch(self, x, y=None):
+    def _get_batch(self, bs: int, x, y=None):
         y_x_pairs = zip(y, x) if y else enumerate(x)
-        for batch in cytoolz.partition_all(self.bs, y_x_pairs):
+        for batch in cytoolz.partition_all(bs, y_x_pairs):
             batch_y, batch_x = more_itertools.unzip(batch)
             X, Y = list(batch_x), list(batch_y)
             if sparse.issparse(X[0]):
@@ -183,16 +183,13 @@ class ScikitBasedOperation(Operation, TrainableMixin):
                 X = np.vstack(X)
             yield X, Y
 
-    def _train(self, ds, labels):
-        # if stream is finite then train normally
-        if ds.is_countable:
-            self.model.fit(ds.items, labels)
-        else:
+    def _train(self, ds: DataStream, labels):
+        bs = len(ds.items) if ds.is_countable else self.bs
+        for x, y in self._get_batch(bs, ds, labels):
             if self.supports_batch_training:
-                for x, y in self._get_batch(ds, labels):
-                    self.model.partial_fit(x, y)
+                self.model.partial_fit(x, y)
             else:
-                self.model.fit(list(ds), labels)
+                self.model.fit(x, y)
 
     def _predict(self, ds):
         # if this cannot predict on new then return the value
@@ -202,7 +199,7 @@ class ScikitBasedOperation(Operation, TrainableMixin):
             yield preds, ds.context
         else:
             predict_fn = getattr(self.model, self.predict_fn_name)
-            for batch, context in self._get_batch(ds, ds.context):
+            for batch, context in self._get_batch(self.bs, ds, ds.context):
                 preds = predict_fn(batch)
                 yield preds, context
 

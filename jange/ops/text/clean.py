@@ -110,7 +110,7 @@ def lemmatize(
     return ops.base.SpacyBasedOperation(nlp=nlp, process_doc_fn=_lemmatize, name=name,)
 
 
-@base.accepts(str)
+@base.accepts(str, Doc)
 @base.produces(str)
 class TokenFilterOperation(ops.base.SpacyBasedOperation):
     """Operation for filtering individual tokens.
