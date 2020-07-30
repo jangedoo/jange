@@ -2,12 +2,12 @@
 """
 
 from typing import Iterable, Optional
-import more_itertools
 
+import more_itertools
 import sklearn.decomposition as skdecomp
 from sklearn.base import TransformerMixin
 
-from jange import base, ops, stream
+from jange import ops, stream
 
 SUPPORTED_CLASSES = [skdecomp.LatentDirichletAllocation, skdecomp.NMF]
 

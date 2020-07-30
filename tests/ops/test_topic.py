@@ -1,5 +1,7 @@
 from unittest.mock import ANY
+
 import pytest
+
 from jange import ops, stream
 
 
@@ -7,7 +9,7 @@ from jange import ops, stream
     "topic_op", [ops.topic.nmf(n_topics=2), ops.topic.lda(n_topics=2)]
 )
 def test_topic_modeling(topic_op):
-    ds = stream.DataStream(["this is about playstation", "government governs",])
+    ds = stream.DataStream(["this is about playstation", "government governs"])
     topics_ds = ds.apply(ops.text.encode.count(name="vec"), topic_op)
     vec_op = topics_ds.applied_ops.find_by_name("vec")
     feature_names = vec_op.model.get_feature_names()
