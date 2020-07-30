@@ -11,7 +11,7 @@ class NearestNeighborsOperation(ops.base.ScikitBasedOperation):
         model = sknn.NearestNeighbors(n_neighbors=n_neighbors, metric=metric)
         super().__init__(model=model, predict_fn_name="kneighbors", name=name)
 
-    def _predict(self, ds):
+    def _predict(self, ds, predict_params: dict = {}):
         # nn needs access to full dataset to determine nearest neighbors
         ctx = list(ds.context)
         bs = len(ctx)
