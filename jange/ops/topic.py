@@ -2,50 +2,46 @@
 """
 
 from typing import Iterable, Optional
+import more_itertools
 
 import sklearn.decomposition as skdecomp
 from sklearn.base import TransformerMixin
 
-from jange.base import Operation, TrainableMixin, DataStream
+from jange import base, ops, stream
 
 SUPPORTED_CLASSES = [skdecomp.LatentDirichletAllocation, skdecomp.NMF]
 
 
-class TopicModelingOperation(Operation, TrainableMixin):
+class TopicModelingOperation(ops.base.ScikitBasedOperation):
     def __init__(
         self, model: TransformerMixin, name: Optional[str] = "topic_modeling",
     ) -> None:
-        super().__init__(name=name)
+
         if not any(isinstance(model, cls) for cls in SUPPORTED_CLASSES):
             raise ValueError(
                 f"model should be one of {SUPPORTED_CLASSES} but got {type(model)}"
             )
-        self.model: TransformerMixin = model
+        super().__init__(model=model, predict_fn_name="transform", name=name)
 
-    def run(self, ds: DataStream) -> DataStream:
-        if self.should_train:
-            self.model.fit(ds.items)
+    def _get_topic_per_item(self, raw_topics_ds: stream.DataStream):
+        for topic_score, ctx in zip(raw_topics_ds, raw_topics_ds.context):
+            topic_id = topic_score.argsort()[-1]
+            yield topic_id, ctx
 
-        features = self.model.transform(ds.items)
-
-        topic_per_item = []
-        # features.shape = [n_items, n_topics]
-        # sort by score per topic in ascending order and take
-        # the last one (with the highest score) for each row
-        # using [:,-1] slice
-        for topic_idx in features.argsort(axis=1)[:, -1]:
-            topic_per_item.append(topic_idx)
-
-        return DataStream(
-            topic_per_item, applied_ops=ds.applied_ops + [self], context=ds.context
+    def run(self, ds: stream.DataStream) -> stream.DataStream:
+        raw_topics_scores_ds = super().run(ds)
+        topics_with_ctx = self._get_topic_per_item(raw_topics_scores_ds)
+        topics, ctxs = more_itertools.unzip(topics_with_ctx)
+        return stream.DataStream(
+            items=topics, applied_ops=ds.applied_ops + [self], context=ctxs
         )
 
     def map_topics(
         self,
-        topics_ds: DataStream,
+        topics_ds: stream.DataStream,
         feature_names: Iterable[str],
         max_words_per_topic: int = 5,
-    ) -> DataStream:
+    ) -> stream.DataStream:
         words_of_topics = []
         for topic_vec in self.model.components_:
             words_of_topic = []
@@ -53,8 +49,8 @@ class TopicModelingOperation(Operation, TrainableMixin):
                 words_of_topic.append(feature_names[feature_id])
             words_of_topics.append(words_of_topic)
 
-        mapped_topics = [words_of_topics[topic_id] for topic_id in topics_ds]
-        return DataStream(
+        mapped_topics = (words_of_topics[topic_id] for topic_id in topics_ds)
+        return stream.DataStream(
             mapped_topics, applied_ops=topics_ds.applied_ops, context=topics_ds.context
         )
 

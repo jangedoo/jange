@@ -189,10 +189,11 @@ class DataStream:
             self.items = items
             return type(first)
 
-    def apply(self, *ops, result_collector: dict = None):
+    def apply(self, *ops, result_collector: dict = None, op_kwargs: dict = {}):
         x = self
         for op in ops:
-            x = op.run(x)
+            kwargs = op_kwargs.get(op.name, {})
+            x = op.run(x, **kwargs)
             if result_collector is not None:
                 result_collector[op] = x
         return x
