@@ -1,10 +1,18 @@
 import functools
+import logging
 import warnings
 from typing import Any, Iterable, List, Optional
 
 import cytoolz
 import more_itertools
 from scipy.sparse import issparse
+
+
+class LoggerMixin(object):
+    @property
+    def logger(self):
+        name = ".".join([__name__, self.__class__.__name__])
+        return logging.getLogger(name)
 
 
 class OperationCollection(list):
@@ -204,7 +212,7 @@ class DataStream:
         return f"DataStream(item_type={item_type}, is_finite={self.is_countable}, total_items={total_items})"
 
 
-class Operation:
+class Operation(LoggerMixin):
     accepts_types = []
     produces_types = []
 
@@ -246,7 +254,10 @@ def accepts(*types, strict=False):
         @functools.wraps(f)
         def wrapper(self, ds: DataStream, *args, **kwargs):
             item_type = ds.item_type
-            if self.accepts_types and item_type not in self.accepts_types:
+            if self.accepts_types and not any(
+                issubclass(item_type, accepted_type)
+                for accepted_type in self.accepts_types
+            ):
                 msg = f"Operation {self} expected DataStream having item_type = any{self.accepts_types} but got {item_type}"
                 if self.strict_validation:
                     raise Exception(msg)

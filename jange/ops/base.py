@@ -183,7 +183,7 @@ class ScikitBasedOperation(Operation, TrainableMixin):
                 X = np.vstack(X)
             yield X, Y
 
-    def _train(self, ds: DataStream, fit_params: dict = {}):
+    def _fit(self, ds: DataStream, fit_params: dict = {}):
         if self.supports_batch_training:
             bs = self.bs
             items = ds.items
@@ -224,7 +224,7 @@ class ScikitBasedOperation(Operation, TrainableMixin):
                 train_ds = DataStream(train_items, context=train_context)
                 pred_ds = DataStream(pred_items, context=pred_context)
 
-            self._train(train_ds, fit_params)
+            self._fit(train_ds, fit_params)
         else:
             pred_ds = ds
         preds, context = more_itertools.unzip(self._predict(pred_ds, predict_params))
