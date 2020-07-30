@@ -191,7 +191,7 @@ class ScikitBasedOperation(Operation, TrainableMixin):
             items = list(ds)
             bs = len(items)
 
-        labels = fit_params.pop("labels", None)
+        labels = fit_params.pop("y", None)
         for x, y in self._get_batch(bs, items, labels):
             if self.supports_batch_training:
                 self.model.partial_fit(x, y, **fit_params)
