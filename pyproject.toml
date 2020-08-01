@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jange"
-version = "0.1.5"
+version = "0.1.6"
 description = "Easy NLP library for Python"
 authors = ["Sanjaya Subedi <jangedoo@gmail.com>"]
 license = "Apache-2.0"
