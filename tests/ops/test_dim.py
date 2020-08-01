@@ -44,7 +44,6 @@ def test_calls_appropriate_underlying_methods_for_training_and_prediction(
     if model_class in dim.ALGORITHMS_NOT_SUPPORTING_NEW_INFERENCE:
         model.embedding_ = test_return_value
         output = op.run(ds)
-        # assert that fit_transform was called regardless of state of `should_train`
         model.fit.assert_called_once()
         assert list(output.items) == test_return_value
         assert list(output.context) == context
@@ -53,7 +52,10 @@ def test_calls_appropriate_underlying_methods_for_training_and_prediction(
         model.transform.return_value = test_return_value
         output = op.run(ds)
         if should_train:
-            model.fit.assert_called_once()
+            if op.supports_batch_training:
+                model.partial_fit.assert_called_once()
+            else:
+                model.fit.assert_called_once()
         else:
             model.fit.assert_not_called()
             model.transform.assert_called_once()

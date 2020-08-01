@@ -52,7 +52,10 @@ def test_calls_appropriate_underlying_methods_for_training_and_prediction(
         output = op.run(ds)
 
         if should_train:
-            model.fit.assert_called_once()
+            if op.supports_batch_training:
+                model.partial_fit.assert_called_once()
+            else:
+                model.fit.assert_called_once()
             model.predict.assert_called_once()
         else:
             model.fit.assert_not_called()

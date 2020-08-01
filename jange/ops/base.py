@@ -172,9 +172,9 @@ class ScikitBasedOperation(Operation, TrainableMixin):
             return callable(attrib)
         return False
 
-    def _get_batch(self, x, y=None):
+    def _get_batch(self, bs: int, x, y=None):
         y_x_pairs = zip(y, x) if y else enumerate(x)
-        for batch in cytoolz.partition_all(self.bs, y_x_pairs):
+        for batch in cytoolz.partition_all(bs, y_x_pairs):
             batch_y, batch_x = more_itertools.unzip(batch)
             X, Y = list(batch_x), list(batch_y)
             if sparse.issparse(X[0]):
@@ -183,18 +183,22 @@ class ScikitBasedOperation(Operation, TrainableMixin):
                 X = np.vstack(X)
             yield X, Y
 
-    def _train(self, ds, labels):
-        # if stream is finite then train normally
-        if ds.is_countable:
-            self.model.fit(ds.items, labels)
+    def _fit(self, ds: DataStream, fit_params: dict = {}):
+        if self.supports_batch_training:
+            bs = self.bs
+            items = ds.items
         else:
-            if self.supports_batch_training:
-                for x, y in self._get_batch(ds, labels):
-                    self.model.partial_fit(x, y)
-            else:
-                self.model.fit(list(ds), labels)
+            items = list(ds)
+            bs = len(items)
 
-    def _predict(self, ds):
+        labels = fit_params.pop("y", None)
+        for x, y in self._get_batch(bs, items, labels):
+            if self.supports_batch_training:
+                self.model.partial_fit(x, y, **fit_params)
+            else:
+                self.model.fit(x, y, **fit_params)
+
+    def _predict(self, ds, predict_params: dict = {}):
         # if this cannot predict on new then return the value
         # stored in some attribute
         if not self.can_predict_on_new:
@@ -202,11 +206,11 @@ class ScikitBasedOperation(Operation, TrainableMixin):
             yield preds, ds.context
         else:
             predict_fn = getattr(self.model, self.predict_fn_name)
-            for batch, context in self._get_batch(ds, ds.context):
-                preds = predict_fn(batch)
+            for batch, context in self._get_batch(self.bs, ds, ds.context):
+                preds = predict_fn(batch, **predict_params)
                 yield preds, context
 
-    def run(self, ds, labels=None):
+    def run(self, ds, fit_params: dict = {}, predict_params: dict = {}):
         if not self.can_predict_on_new:
             self.should_train = True
 
@@ -220,10 +224,10 @@ class ScikitBasedOperation(Operation, TrainableMixin):
                 train_ds = DataStream(train_items, context=train_context)
                 pred_ds = DataStream(pred_items, context=pred_context)
 
-            self._train(train_ds, labels)
+            self._fit(train_ds, fit_params)
         else:
             pred_ds = ds
-        preds, context = more_itertools.unzip(self._predict(pred_ds))
+        preds, context = more_itertools.unzip(self._predict(pred_ds, predict_params))
         preds = itertools.chain.from_iterable(preds)
         context = itertools.chain.from_iterable(context)
         return DataStream(
