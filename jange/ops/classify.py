@@ -5,6 +5,7 @@ from typing import List
 import numpy as np
 import scipy.sparse as sp
 import sklearn.linear_model as sklm
+from sklearn.preprocessing import MultiLabelBinarizer
 from spacy.util import compounding, minibatch
 
 from jange import stream
@@ -161,12 +162,15 @@ def spacy_classifier(nlp=None, name="spacy_classifier"):
 @accepts(np.ndarray, sp.spmatrix, strict=True)
 @produces(ClassificationResult)
 class SklearnClassifierOperation(ScikitBasedOperation):
-    def __init__(self, model, name: str = "sklearn_classifier") -> None:
+    def __init__(
+        self, model, exclusive_classes=True, name: str = "sklearn_classifier"
+    ) -> None:
         super().__init__(model=model, predict_fn_name="predict", name=name)
+        self.exclusive_classes = exclusive_classes
 
     def _fit(self, ds: stream.DataStream, fit_params: dict):
         required_params = ["y"]
-        if self.supports_batch_training:
+        if self.supports_batch_training or not self.exclusive_classes:
             required_params.append("classes")
         if any(x not in list(fit_params.keys()) for x in required_params):
             raise ValueError(
@@ -175,34 +179,53 @@ class SklearnClassifierOperation(ScikitBasedOperation):
                 " distinct classes in your dataset"
             )
 
+        if not self.exclusive_classes:
+            self.label_encoder = MultiLabelBinarizer()
+            self.label_encoder.fit([fit_params["classes"]])
+            transformed_classes = self.label_encoder.transform(fit_params["y"])
+            fit_params["y"] = transformed_classes
+
+            if not self.supports_batch_training:
+                del fit_params["classes"]
+
         return super()._fit(ds, fit_params)
 
     def _predict(self, ds, predict_params: dict = {}):
         for batch, context in self._get_batch(self.bs, ds, ds.context):
-            results = []
-            if hasattr(self.model, "predict_proba"):
-                raw_output = self.model.predict_proba(batch)
-                label_indices = raw_output.argmax(axis=1)
-                labels, probas, raws = [], [], []
-                for row_number, lbl_idx in enumerate(label_indices):
-                    label, proba, raw = self._parse_probabilities(
-                        raw_output, row_number, lbl_idx
-                    )
-
-                    results.append(
-                        ClassificationResult(label=label, proba=proba, raw=raw)
-                    )
+            if self.exclusive_classes:
+                yield self._predict_multiclass(batch, context)
             else:
-                labels = self.model.predict(batch)
-                probas = [1.0] * len(labels)
-                raws = dict(zip(labels, probas))
+                yield self._predict_multilabel(batch, context)
 
-                for label, proba, raw in zip(labels, probas, raws):
-                    results.append(
-                        ClassificationResult(label=label, proba=proba, raw=raw)
-                    )
+    def _predict_multilabel(self, batch, context):
+        results = []
+        labels = self.label_encoder.inverse_transform(self.model.predict(batch))
+        for label in labels:
+            results.append(ClassificationResult(label=label, proba=None, raw=label))
 
-            yield results, context
+        return results, context
+
+    def _predict_multiclass(self, batch, context):
+        results = []
+        if hasattr(self.model, "predict_proba"):
+            raw_output = self.model.predict_proba(batch)
+            label_indices = raw_output.argmax(axis=1)
+            labels, probas, raws = [], [], []
+            for row_number, lbl_idx in enumerate(label_indices):
+                label, proba, raw = self._parse_probabilities(
+                    raw_output, row_number, lbl_idx
+                )
+
+                results.append(ClassificationResult(label=label, proba=proba, raw=raw))
+        else:
+            labels = self.model.predict(batch)
+            probas = [1.0] * len(labels)
+            raws = dict(zip(labels, probas))
+
+            for label, proba, raw in zip(labels, probas, raws):
+                results.append(ClassificationResult(label=label, proba=proba, raw=raw))
+
+        return results, context
 
     def _parse_probabilities(self, raw_output, row_number, lbl_idx):
         probabilities = raw_output[row_number]
@@ -214,15 +237,23 @@ class SklearnClassifierOperation(ScikitBasedOperation):
         return label, proba, raw
 
 
-def sgd_classifier(name="sgd_classifier"):
+def sgd_classifier(exclusive_classes=True, name="sgd_classifier"):
     return SklearnClassifierOperation(
-        model=sklm.SGDClassifier(loss="modified_huber"), name=name
+        model=sklm.SGDClassifier(loss="modified_huber"),
+        exclusive_classes=exclusive_classes,
+        name=name,
     )
 
 
-def logistic_regresssion_classifier(name="logistic_regresssion_classifier"):
-    return SklearnClassifierOperation(model=sklm.LogisticRegression(), name=name)
+def logistic_regresssion_classifier(
+    exclusive_classes=True, name="logistic_regresssion_classifier"
+):
+    return SklearnClassifierOperation(
+        model=sklm.LogisticRegression(), exclusive_classes=exclusive_classes, name=name
+    )
 
 
-def sklearn_classifier(model, name="sklearn_classifier"):
-    return SklearnClassifierOperation(model=model, name=name)
+def sklearn_classifier(model, exclusive_classes=True, name="sklearn_classifier"):
+    return SklearnClassifierOperation(
+        model=model, exclusive_classes=exclusive_classes, name=name
+    )

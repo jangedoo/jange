@@ -173,10 +173,15 @@ class ScikitBasedOperation(Operation, TrainableMixin):
         return False
 
     def _get_batch(self, bs: int, x, y=None):
-        y_x_pairs = zip(y, x) if y else enumerate(x)
+        y_x_pairs = zip(y, x) if y is not None else enumerate(x)
         for batch in cytoolz.partition_all(bs, y_x_pairs):
             batch_y, batch_x = more_itertools.unzip(batch)
             X, Y = list(batch_x), list(batch_y)
+
+            if sparse.issparse(Y[0]):
+                Y = sparse.vstack(Y)
+            elif isinstance(Y[0], np.ndarray):
+                Y = np.vstack(Y)
             if sparse.issparse(X[0]):
                 X = sparse.vstack(X)
             elif isinstance(X[0], np.ndarray):
