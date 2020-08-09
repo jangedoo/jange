@@ -12,7 +12,7 @@ print(ds)
 # Extract clusters
 result_collector = {}
 clusters_ds = ds.apply(
-    ops.text.clean.filter_pos("NOUN", keep_matching_tokens=True),
+    ops.text.clean.pos_filter("NOUN", keep_matching_tokens=True),
     ops.text.encode.tfidf(max_features=5000, name="tfidf"),
     ops.cluster.minibatch_kmeans(n_clusters=5),
     result_collector=result_collector,
